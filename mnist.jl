@@ -81,8 +81,8 @@ function train()
 
     @info "Before training" round(accuracy(x_train_ |> cpu, y_train_ |> cpu), digits=3) round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
 
-    opt = ADAM(0.01)
-    # opt = AdamW(0.01, (0.9, 0.999), 0.0001)
+    # opt = ADAM(0.01)
+    opt = AdamW(0.01, (0.9, 0.999), 0.00001)
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
@@ -92,8 +92,8 @@ function train()
     BATCH_SIZE = 100
     for epoch in 1:10
         # shuffle training data
-        # s = shuffle(1:len_train)
-        s = 1:len_train
+        s = shuffle(1:len_train)
+        # s = 1:len_train
         x_train_s = x_train_[:, :, :, s]
         y_train_s = y_train_[:, s]
         # train batch
