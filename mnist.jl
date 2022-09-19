@@ -56,7 +56,6 @@ if args["model_cuda"] >= 0
     y_test_ = CUDA.cu(y_test_)
 end
 
-
 ##################################################
 # Model
 model = Chain(
@@ -79,14 +78,13 @@ lossF = (x, y) -> begin
 end
 
 accuracy = (x_, y_) -> begin
-    # model_cpu = model |> cpu
-    # acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
-    acc = mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
+    model_cpu = model |> cpu
+    acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
+    # acc = mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
     return round(acc, digits=3)
 end
 
 @info "Before training" accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
-
 
 ##################################################
 # training
