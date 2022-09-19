@@ -49,11 +49,11 @@ end
 
 
 model = Chain(
-    Conv((3, 3), 1 => 4, relu),
-    Conv((3, 3), 4 => 8, relu),
-    x -> reshape(x, (24 * 24 * 8, :)),
+    Conv((3, 3), 1 => 4, relu, pad=(1, 1), stride=(1, 1)),
+    Conv((3, 3), 4 => 8, relu, pad=(1, 1), stride=(1, 1)),
+    x -> reshape(x, (28 * 28 * 8, :)),
     # Dropout(0.5),
-    Dense(24 * 24 * 8 => 64, elu),
+    Dense(28 * 28 * 8 => 64, elu),
     # Dropout(0.5),
     Dense(64 => 10, elu),
     softmax
