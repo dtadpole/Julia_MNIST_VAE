@@ -1,8 +1,31 @@
+using ArgParse
 using MLDatasets
 using Flux
+using CUDA
 using Random
 using OneHotArrays
 using StatsBase
+
+function parse_commandline()
+
+    s = ArgParseSettings()
+    @add_arg_table s begin
+
+        "--model_cuda"
+        help = "model cuda number"
+        arg_type = Int
+        default = -1
+    end
+    return parse_args(s)
+end
+
+args = parse_commandline()
+
+if args["model_cuda"] >= 0
+    CUDA.allowscalar(false)
+    CUDA.device!(args["model_cuda"])
+end
+
 
 trainset = MNIST.traindata()
 
@@ -11,6 +34,10 @@ len_train = length(y_train)
 x_train_ = reshape(x_train, 28, 28, 1, :)
 y_train_ = convert(Array{Float32}, onehotbatch(y_train, 0:9))
 # @info "Train data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
+if args["model_cuda"] >= 0
+    x_train_ = x_train_ |> gpu
+    y_train_ = y_train_ |> gpu
+end
 
 model = Chain(
     Conv((3, 3), 1 => 4, relu),
@@ -22,6 +49,9 @@ model = Chain(
     Dense(64, 10, elu),
     softmax
 )
+if args["model_cuda"] >= 0
+    model = model |> gpu
+end
 
 lossF = (x, y) -> begin
     y_ = model(x)
@@ -34,6 +64,10 @@ accuracy = (x_, y_) -> round(sum(argmax(model(x_), dims=1) .== argmax(y_, dims=1
 
 # opt = ADAM(0.01)
 opt = AdamW(0.01, (0.9, 0.999), 0.001)
+if args["model_cuda"] >= 0
+    opt = opt |> gpu
+end
+
 params = Flux.params(model)
 
 BATCH_SIZE = 100
@@ -60,6 +94,10 @@ x_test, y_test = trainset[:]
 x_test_ = reshape(x_test, 28, 28, 1, :)
 y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
+if args["model_cuda"] >= 0
+    x_test_ = x_test_ |> gpu
+    y_test_ = y_test_ |> gpu
+end
 
 testmode!(model)
 @info "Test result" lossF(x_test_, y_test_) accuracy(x_test_, y_test_)
