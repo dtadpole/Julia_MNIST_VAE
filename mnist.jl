@@ -77,9 +77,9 @@ function train()
         return mean(-sum(y .* log.(y_), dims=1))
     end
 
-    accuracy = (x_, y_) -> mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
+    accuracy = (x_, y_) -> round(mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1)), digits=3)
 
-    @info "Before training" round(accuracy(x_train_ |> cpu, y_train_ |> cpu), digits=3) round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
+    @info "Before training" accuracy(x_train_ |> cpu, y_train_ |> cpu) accuracy(x_test_ |> cpu, y_test_ |> cpu)
 
     # opt = ADAM(0.01)
     opt = AdamW(0.01, (0.9, 0.999), 0.00001)
@@ -92,8 +92,7 @@ function train()
     BATCH_SIZE = 100
     for epoch in 1:10
         # shuffle training data
-        s = shuffle(1:len_train)
-        # s = 1:len_train
+        s = shuffle(1:len_train) # s = 1:len_train
         x_train_s = x_train_[:, :, :, s]
         y_train_s = y_train_[:, s]
         # train batch
@@ -107,7 +106,7 @@ function train()
             grads = gradient(() -> lossF(x, y), params)
             Flux.update!(opt, params, grads)
         end
-        @info "Train epoch" epoch round(accuracy(x_train_ |> cpu, y_train_ |> cpu), digits=3) round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
+        @info "Train epoch" epoch accuracy(x_train_ |> cpu, y_train_ |> cpu) accuracy(x_test_ |> cpu, y_test_ |> cpu)
     end
 end
 
@@ -118,7 +117,7 @@ function test()
     global y_test_
     # run test
     testmode!(model)
-    @info "Test result" round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
+    @info "Test result" accuracy(x_test_ |> cpu, y_test_ |> cpu)
 end
 
 train()
