@@ -26,7 +26,7 @@ if args["model_cuda"] >= 0
     CUDA.device!(args["model_cuda"])
 end
 
-
+# train data
 trainset = MNIST.traindata()
 
 x_train, y_train = trainset[:]
@@ -34,6 +34,19 @@ len_train = length(y_train)
 x_train_ = reshape(x_train, 28, 28, 1, :)
 y_train_ = convert(Array{Float32}, onehotbatch(y_train, 0:9))
 # @info "Train data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
+
+# test data
+testset = MNIST.testdata()
+
+x_test, y_test = trainset[:]
+x_test_ = reshape(x_test, 28, 28, 1, :)
+y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
+# @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
+if args["model_cuda"] >= 0
+    x_test_ = x_test_ |> gpu
+    y_test_ = y_test_ |> gpu
+end
+
 
 model = Chain(
     Conv((3, 3), 1 => 4, relu),
@@ -56,7 +69,7 @@ end
 
 accuracy = (x_, y_) -> round(sum(argmax(model(x_), dims=1) .== argmax(y_, dims=1)) / size(y_, 2), digits=3)
 
-@info "Before training" lossF(x_train_, y_train_) accuracy(x_train_, y_train_)
+@info "Before training" lossF(x_test_, y_test_) accuracy(x_test_, y_test_)
 
 opt = ADAM(0.01)
 # opt = AdamW(0.01, (0.9, 0.999), 0.0001)
@@ -87,17 +100,6 @@ for epoch in 1:10
     @info "Train epoch" epoch lossF(x_train_, y_train_) accuracy(x_train_, y_train_)
 end
 
-# test
-testset = MNIST.testdata()
-
-x_test, y_test = trainset[:]
-x_test_ = reshape(x_test, 28, 28, 1, :)
-y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
-# @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
-if args["model_cuda"] >= 0
-    x_test_ = x_test_ |> gpu
-    y_test_ = y_test_ |> gpu
-end
-
+# run test
 testmode!(model)
 @info "Test result" lossF(x_test_, y_test_) accuracy(x_test_, y_test_)
