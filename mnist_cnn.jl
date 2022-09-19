@@ -105,9 +105,10 @@ function train()
             x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
             y = y_train_s[:, i:i+BATCH_SIZE-1]
             if args["model_cuda"] >= 0
-                x = x |> gpu
-                y = y |> gpu
+                x = deepcopy(x) |> gpu
+                y = deepcopy(y) |> gpu
             end
+            # @info "sizes" size(x) size(y)
             grads = gradient(() -> lossF(model_, x, y), params)
             Flux.update!(opt, params, grads)
         end
