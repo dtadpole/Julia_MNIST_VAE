@@ -51,11 +51,11 @@ end
 model = Chain(
     Conv((3, 3), 1 => 4, relu),
     Conv((3, 3), 4 => 8, relu),
-    x -> reshape(x, 24 * 24 * 8, :),
+    x -> reshape(x, (24 * 24 * 8, :)),
     # Dropout(0.5),
-    Dense(24 * 24 * 8, 64, elu),
+    Dense(24 * 24 * 8 => 64, elu),
     # Dropout(0.5),
-    Dense(64, 10, elu),
+    Dense(64 => 10, elu),
     softmax
 )
 if args["model_cuda"] >= 0
