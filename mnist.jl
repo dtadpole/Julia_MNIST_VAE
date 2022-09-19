@@ -30,7 +30,7 @@ end
 
 accuracy = (x_, y_) -> round(sum(argmax(model(x_), dims=1) .== argmax(y_, dims=1)) / size(y_, 2), digits=3)
 
-@info "Before training" loss
+@info "Before training" lossF(x_train_, y_train_) accuracy(x_train_, y_train_)
 
 # opt = ADAM(0.01)
 opt = AdamW(0.01, (0.9, 0.999), 0.001)
