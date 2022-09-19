@@ -34,7 +34,7 @@ end
 trainset = MNIST.traindata()
 
 x_train, y_train = trainset[:]
-const len_train = length(y_train)
+LEN_TRAIN = length(y_train)
 x_train_cpu = convert(Array{Float32}, reshape(x_train, 28, 28, 1, :))
 y_train_cpu = convert(Array{Float32}, onehotbatch(y_train, 0:9))
 if args["model_cuda"] >= 0
@@ -46,11 +46,12 @@ else
 end
 @info "Train data" typeof(x_train_) size(x_train_) typeof(y_train_) size(y_train_)
 
+
 ##################################################
 # Test dataset
 testset = MNIST.testdata()
 
-x_test, y_test = trainset[:]
+x_test, y_test = testset[:]
 x_test_cpu = convert(Array{Float32}, reshape(x_test, 28, 28, 1, :))
 y_test_cpu = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 if args["model_cuda"] >= 0
@@ -61,6 +62,7 @@ else
     y_test_ = y_test_cpu
 end
 @info "Test data" typeof(x_test_) size(x_test_) typeof(y_test_) size(y_test_)
+
 
 ##################################################
 # Model
@@ -90,22 +92,13 @@ accuracy = (x_, y_; test_mode=false) -> begin
         testmode!(model_cpu)
     end
     acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
-    # acc = mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
     return round(acc, digits=3)
 end
 
-@info "Before training" accuracy(x_train_cpu, y_train_cpu) accuracy(x_test_cpu, y_test_cpu)
 
 ##################################################
 # training
-function train()
-
-    global len_train
-    global x_train_
-    global y_train_
-    global x_test_
-    global y_test_
-    global model
+function train(model)
 
     # opt = ADAM(0.01)
     opt = AdamW(0.001, (0.9, 0.999), 0.0001)
@@ -115,36 +108,44 @@ function train()
 
     params = Flux.params(model)
 
+    @info "Before training" accuracy(x_train_cpu, y_train_cpu) accuracy(x_test_cpu, y_test_cpu)
+
     BATCH_SIZE = 100
     for epoch in 1:10
         # shuffle training data
-        s = shuffle(1:len_train) # s = 1:len_train
+        s = shuffle(1:LEN_TRAIN) # s = 1:len_train
         x_train_s = x_train_[:, :, :, s]
         y_train_s = y_train_[:, s]
         # train batch
-        for i in 1:BATCH_SIZE:len_train
+        for i in 1:BATCH_SIZE:LEN_TRAIN
             x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
             y = y_train_s[:, i:i+BATCH_SIZE-1]
             grads = gradient(() -> lossF(x, y), params)
             Flux.update!(opt, params, grads)
         end
         @info "Train epoch" epoch accuracy(x_train_cpu, y_train_cpu) accuracy(x_test_cpu, y_test_cpu)
+        if args["model_cuda"] >= 0
+            CUDA.reclaim()
+        end
     end
 end
 
+
 ##################################################
-# test
-function test()
-    global x_test_
-    global y_test_
-    global model
+# Test
+function test(model)
+
     # run test
     @info "Test result" accuracy(x_test_cpu, y_test_cpu, test_mode=true)
 end
 
 
 ##################################################
+# Main
 if abspath(PROGRAM_FILE) == @__FILE__
-    train()
-    test()
+    train(model)
+    if args["model_cuda"] >= 0
+        CUDA.reclaim()
+    end
+    test(model)
 end
