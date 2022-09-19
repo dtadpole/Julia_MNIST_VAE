@@ -67,7 +67,7 @@ lossF = (x, y) -> begin
     return mean(-sum(y .* log.(y_), dims=1))
 end
 
-accuracy = (x_, y_) -> mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
+accuracy = (x_, y_) -> mean(argmax(model(x_) |> cpu, dims=1) .== argmax(y_ |> cpu, dims=1))
 
 @info "Before training" round(accuracy(x_test_, y_test_), digits=3)
 
