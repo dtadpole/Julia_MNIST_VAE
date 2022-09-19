@@ -47,19 +47,33 @@ x_test_ = reshape(x_test, 28, 28, 1, :)
 y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
 
+##################################################
+# Model
 model = Chain(
-    Conv((3, 3), 1 => 4, relu, pad=(1, 1), stride=(1, 1)),
-    Conv((3, 3), 4 => 8, relu, pad=(1, 1), stride=(1, 1)),
+    Conv((3, 3), 1 => 8, relu, pad=(1, 1)),
+    Conv((3, 3), 8 => 8, relu, pad=(1, 1)),
     x -> reshape(x, (28 * 28 * 8, :)),
     Dropout(0.4),
     Dense(28 * 28 * 8 => 64, elu),
     Dropout(0.4),
-    Dense(64 => 10, elu),
-    softmax
+    Dense(64 => 10, elu)
 )
 if args["model_cuda"] >= 0
     model = model |> gpu
 end
+
+lossF = (x, y) -> begin
+    y_ = softmax(model(x), dims=1)
+    return mean(-sum(y .* log.(y_), dims=1))
+end
+
+accuracy = (x_, y_) -> begin
+    model_cpu = model |> cpu
+    acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
+    return round(acc, digits=3)
+end
+
+@info "Before training" accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
 
 
 ##################################################
@@ -72,19 +86,6 @@ function train()
     global x_test_
     global y_test_
     global model
-
-    lossF = (x, y) -> begin
-        y_ = model(x)
-        return mean(-sum(y .* log.(y_), dims=1))
-    end
-
-    accuracy = (x_, y_) -> begin
-        model_cpu = model |> cpu
-        acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
-        return round(acc, digits=3)
-    end
-
-    @info "Before training" accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
 
     # opt = ADAM(0.01)
     opt = AdamW(0.001, (0.9, 0.999), 0.0001)
