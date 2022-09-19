@@ -39,7 +39,7 @@ modelF = (() -> begin
         MaxPool((2, 2)),
         Conv((3, 3), 32 => 32, relu, pad=(1, 1)),
         x -> reshape(x, (7 * 7 * 32, :)),
-        # Dropout(0.5),
+        Dropout(0.5),
         Dense(7 * 7 * 32 => 128, elu),
         Dropout(0.5),
         Dense(128 => 10, elu),
