@@ -37,7 +37,6 @@ x_train, y_train = trainset[:]
 const len_train = length(y_train)
 x_train_cpu = convert(Array{Float32}, reshape(x_train, 28, 28, 1, :))
 y_train_cpu = convert(Array{Float32}, onehotbatch(y_train, 0:9))
-@info "Train data" typeof(x_train_) size(x_train_) typeof(y_train_) size(y_train_)
 if args["model_cuda"] >= 0
     x_train_ = x_train_cpu |> gpu
     y_train_ = y_train_cpu |> gpu
@@ -45,6 +44,7 @@ else
     x_train_ = x_train_cpu
     y_train_ = y_train_cpu
 end
+@info "Train data" typeof(x_train_) size(x_train_) typeof(y_train_) size(y_train_)
 
 ##################################################
 # Test dataset
@@ -53,7 +53,6 @@ testset = MNIST.testdata()
 x_test, y_test = trainset[:]
 x_test_cpu = convert(Array{Float32}, reshape(x_test, 28, 28, 1, :))
 y_test_cpu = convert(Array{Float32}, onehotbatch(y_test, 0:9))
-@info "Test data" typeof(x_test_) size(x_test_) typeof(y_test_) size(y_test_)
 if args["model_cuda"] >= 0
     x_test_ = x_test_cpu |> gpu
     y_test_ = y_test_cpu |> gpu
@@ -61,6 +60,7 @@ else
     x_test_ = x_test_cpu
     y_test_ = y_test_cpu
 end
+@info "Test data" typeof(x_test_) size(x_test_) typeof(y_test_) size(y_test_)
 
 ##################################################
 # Model
