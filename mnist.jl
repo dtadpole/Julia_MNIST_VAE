@@ -69,7 +69,7 @@ end
 
 accuracy = (x_, y_) -> round(sum(argmax(model(x_), dims=1) .== argmax(y_, dims=1)) / size(y_, 2), digits=3)
 
-@info "Before training" lossF(x_test_, y_test_) accuracy(x_test_, y_test_)
+@info "Before training" accuracy(x_test_, y_test_)
 
 opt = ADAM(0.01)
 # opt = AdamW(0.01, (0.9, 0.999), 0.0001)
@@ -97,9 +97,9 @@ for epoch in 1:10
         grads = gradient(() -> lossF(x, y), params)
         Flux.update!(opt, params, grads)
     end
-    @info "Train epoch" epoch lossF(x_train_, y_train_) accuracy(x_train_, y_train_)
+    @info "Train epoch" epoch accuracy(x_train_, y_train_)
 end
 
 # run test
 testmode!(model)
-@info "Test result" lossF(x_test_, y_test_) accuracy(x_test_, y_test_)
+@info "Test result" accuracy(x_test_, y_test_)
