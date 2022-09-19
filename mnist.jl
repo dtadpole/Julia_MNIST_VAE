@@ -34,10 +34,6 @@ len_train = length(y_train)
 x_train_ = reshape(x_train, 28, 28, 1, :)
 y_train_ = convert(Array{Float32}, onehotbatch(y_train, 0:9))
 # @info "Train data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
-if args["model_cuda"] >= 0
-    x_train_ = x_train_ |> gpu
-    y_train_ = y_train_ |> gpu
-end
 
 model = Chain(
     Conv((3, 3), 1 => 4, relu),
@@ -81,6 +77,10 @@ for epoch in 1:10
     for i in 1:BATCH_SIZE:len_train
         x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
         y = y_train_s[:, i:i+BATCH_SIZE-1]
+        if args["model_cuda"] >= 0
+            x = x |> gpu
+            y = y |> gpu
+        end
         grads = gradient(() -> lossF(x, y), params)
         Flux.update!(opt, params, grads)
     end
