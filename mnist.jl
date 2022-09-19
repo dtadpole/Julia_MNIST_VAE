@@ -46,10 +46,7 @@ x_test, y_test = trainset[:]
 x_test_ = reshape(x_test, 28, 28, 1, :)
 y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
-if args["model_cuda"] >= 0
-    x_test_ = x_test_ |> gpu
-    y_test_ = y_test_ |> gpu
-end
+
 
 ##################################################
 # training
@@ -80,9 +77,9 @@ function train()
         return mean(-sum(y .* log.(y_), dims=1))
     end
 
-    accuracy = (x_, y_) -> mean(argmax(model(x_) |> cpu, dims=1) .== argmax(y_ |> cpu, dims=1))
+    accuracy = (x_, y_) -> mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
 
-    @info "Before training" round(accuracy(x_train_, y_train_), digits=3) round(accuracy(x_test_, y_test_), digits=3)
+    @info "Before training" round(accuracy(x_train_ |> cpu, y_train_ |> cpu), digits=3) round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
 
     opt = ADAM(0.01)
     # opt = AdamW(0.01, (0.9, 0.999), 0.0001)
@@ -110,7 +107,7 @@ function train()
             grads = gradient(() -> lossF(x, y), params)
             Flux.update!(opt, params, grads)
         end
-        @info "Train epoch" epoch round(accuracy(x_train_, y_train_), digits=3) round(accuracy(x_test_, y_test_), digits=3)
+        @info "Train epoch" epoch round(accuracy(x_train_ |> cpu, y_train_ |> cpu), digits=3) round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
     end
 end
 
@@ -121,7 +118,7 @@ function test()
     global y_test_
     # run test
     testmode!(model)
-    @info "Test result" round(accuracy(x_test_, y_test_), digits=3)
+    @info "Test result" round(accuracy(x_test_ |> cpu, y_test_ |> cpu), digits=3)
 end
 
 train()
