@@ -51,12 +51,13 @@ y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # Model
 model = Chain(
     Conv((3, 3), 1 => 8, relu, pad=(1, 1)),
-    Conv((3, 3), 8 => 8, relu, pad=(1, 1)),
-    x -> reshape(x, (28 * 28 * 8, :)),
+    Conv((3, 3), 8 => 16, relu, pad=(1, 1)),
+    Conv((3, 3), 16 => 32, relu, pad=(1, 1)),
+    x -> reshape(x, (28 * 28 * 32, :)),
     Dropout(0.4),
-    Dense(28 * 28 * 8 => 64, elu),
+    Dense(28 * 28 * 32 => 256, elu),
     Dropout(0.4),
-    Dense(64 => 10, elu)
+    Dense(256 => 10, elu)
 )
 if args["model_cuda"] >= 0
     model = model |> gpu
@@ -99,8 +100,8 @@ function train()
     for epoch in 1:10
         # shuffle training data
         s = shuffle(1:len_train) # s = 1:len_train
-        x_train_s = x_train_[:, :, :, s]
-        y_train_s = y_train_[:, s]
+        x_train_s = copy(x_train_[:, :, :, s])
+        y_train_s = copy(y_train_[:, s])
         # train batch
         for i in 1:BATCH_SIZE:len_train
             x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
