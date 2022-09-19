@@ -62,8 +62,8 @@ accuracy = (x_, y_) -> round(sum(argmax(model(x_), dims=1) .== argmax(y_, dims=1
 
 @info "Before training" lossF(x_train_, y_train_) accuracy(x_train_, y_train_)
 
-# opt = ADAM(0.01)
-opt = AdamW(0.01, (0.9, 0.999), 0.001)
+opt = ADAM(0.01)
+# opt = AdamW(0.01, (0.9, 0.999), 0.0001)
 if args["model_cuda"] >= 0
     opt = opt |> gpu
 end
