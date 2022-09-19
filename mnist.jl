@@ -35,12 +35,15 @@ trainset = MNIST.traindata()
 
 x_train, y_train = trainset[:]
 const len_train = length(y_train)
-x_train_ = convert(Array{Float32}, reshape(x_train, 28, 28, 1, :))
-y_train_ = convert(Array{Float32}, onehotbatch(y_train, 0:9))
+x_train_cpu = convert(Array{Float32}, reshape(x_train, 28, 28, 1, :))
+y_train_cpu = convert(Array{Float32}, onehotbatch(y_train, 0:9))
 @info "Train data" typeof(x_train_) size(x_train_) typeof(y_train_) size(y_train_)
 if args["model_cuda"] >= 0
-    x_train_ = CUDA.cu(x_train_)
-    y_train_ = CUDA.cu(y_train_)
+    x_train_ = x_train_cpu |> gpu
+    y_train_ = y_train_cpu |> gpu
+else
+    x_train_ = x_train_cpu
+    y_train_ = y_train_cpu
 end
 
 ##################################################
@@ -48,12 +51,15 @@ end
 testset = MNIST.testdata()
 
 x_test, y_test = trainset[:]
-x_test_ = convert(Array{Float32}, reshape(x_test, 28, 28, 1, :))
-y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
+x_test_cpu = convert(Array{Float32}, reshape(x_test, 28, 28, 1, :))
+y_test_cpu = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 @info "Test data" typeof(x_test_) size(x_test_) typeof(y_test_) size(y_test_)
 if args["model_cuda"] >= 0
-    x_test_ = CUDA.cu(x_test_)
-    y_test_ = CUDA.cu(y_test_)
+    x_test_ = x_test_cpu |> gpu
+    y_test_ = y_test_cpu |> gpu
+else
+    x_test_ = x_test_cpu
+    y_test_ = y_test_cpu
 end
 
 ##################################################
@@ -64,9 +70,9 @@ model = Chain(
     Conv((3, 3), 16 => 16, relu, pad=(1, 1)),
     x -> reshape(x, (28 * 28 * 16, :)),
     Dropout(0.4),
-    Dense(28 * 28 * 16 => 256, elu),
+    Dense(28 * 28 * 16 => 128, elu),
     Dropout(0.4),
-    Dense(256 => 10, elu)
+    Dense(128 => 10, elu)
 )
 if args["model_cuda"] >= 0
     model = model |> gpu
@@ -77,14 +83,18 @@ lossF = (x, y) -> begin
     return mean(-sum(y .* log.(y_), dims=1))
 end
 
-accuracy = (x_, y_) -> begin
+accuracy = (x_, y_; test_mode=false) -> begin
+    # accuracy on cpu
     model_cpu = model |> cpu
+    if test_mode
+        testmode!(model_cpu)
+    end
     acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
     # acc = mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1))
     return round(acc, digits=3)
 end
 
-@info "Before training" accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
+@info "Before training" accuracy(x_train_cpu, y_train_cpu) accuracy(x_test_cpu, y_test_cpu)
 
 ##################################################
 # training
@@ -115,14 +125,10 @@ function train()
         for i in 1:BATCH_SIZE:len_train
             x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
             y = y_train_s[:, i:i+BATCH_SIZE-1]
-            # if args["model_cuda"] >= 0
-            #     x = x |> gpu
-            #     y = y |> gpu
-            # end
             grads = gradient(() -> lossF(x, y), params)
             Flux.update!(opt, params, grads)
         end
-        @info "Train epoch" epoch accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
+        @info "Train epoch" epoch accuracy(x_train_cpu, y_train_cpu) accuracy(x_test_cpu, y_test_cpu)
     end
 end
 
@@ -133,8 +139,7 @@ function test()
     global y_test_
     global model
     # run test
-    testmode!(model)
-    @info "Test result" accuracy(x_test_, y_test_)
+    @info "Test result" accuracy(x_test_cpu, y_test_cpu, test_mode=true)
 end
 
 
