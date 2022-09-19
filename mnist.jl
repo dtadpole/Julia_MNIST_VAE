@@ -47,6 +47,20 @@ x_test_ = reshape(x_test, 28, 28, 1, :)
 y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
 
+model = Chain(
+    Conv((3, 3), 1 => 4, relu, pad=(1, 1), stride=(1, 1)),
+    Conv((3, 3), 4 => 8, relu, pad=(1, 1), stride=(1, 1)),
+    x -> reshape(x, (28 * 28 * 8, :)),
+    Dropout(0.4),
+    Dense(28 * 28 * 8 => 64, elu),
+    Dropout(0.4),
+    Dense(64 => 10, elu),
+    softmax
+)
+if args["model_cuda"] >= 0
+    model = model |> gpu
+end
+
 
 ##################################################
 # training
@@ -57,32 +71,23 @@ function train()
     global y_train_
     global x_test_
     global y_test_
-
-    model = Chain(
-        Conv((3, 3), 1 => 4, relu, pad=(1, 1), stride=(1, 1)),
-        Conv((3, 3), 4 => 8, relu, pad=(1, 1), stride=(1, 1)),
-        x -> reshape(x, (28 * 28 * 8, :)),
-        # Dropout(0.5),
-        Dense(28 * 28 * 8 => 64, elu),
-        # Dropout(0.5),
-        Dense(64 => 10, elu),
-        softmax
-    )
-    if args["model_cuda"] >= 0
-        model = model |> gpu
-    end
+    global model
 
     lossF = (x, y) -> begin
         y_ = model(x)
         return mean(-sum(y .* log.(y_), dims=1))
     end
 
-    accuracy = (x_, y_) -> round(mean(argmax(model(x_), dims=1) .== argmax(y_, dims=1)), digits=3)
+    accuracy = (x_, y_) -> begin
+        model_cpu = model |> cpu
+        acc = mean(argmax(model_cpu(x_ |> cpu), dims=1) .== argmax(y_ |> cpu, dims=1))
+        return round(acc, digits=3)
+    end
 
-    @info "Before training" accuracy(x_train_ |> cpu, y_train_ |> cpu) accuracy(x_test_ |> cpu, y_test_ |> cpu)
+    @info "Before training" accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
 
     # opt = ADAM(0.01)
-    opt = AdamW(0.01, (0.9, 0.999), 0.00001)
+    opt = AdamW(0.001, (0.9, 0.999), 0.0001)
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
@@ -106,7 +111,7 @@ function train()
             grads = gradient(() -> lossF(x, y), params)
             Flux.update!(opt, params, grads)
         end
-        @info "Train epoch" epoch accuracy(x_train_ |> cpu, y_train_ |> cpu) accuracy(x_test_ |> cpu, y_test_ |> cpu)
+        @info "Train epoch" epoch accuracy(x_train_, y_train_) accuracy(x_test_, y_test_)
     end
 end
 
@@ -115,11 +120,12 @@ end
 function test()
     global x_test_
     global y_test_
+    global model
     # run test
     testmode!(model)
-    @info "Test result" accuracy(x_test_ |> cpu, y_test_ |> cpu)
+    @info "Test result" accuracy(x_test_, y_test_)
 end
 
 train()
 
-# test()
+test()
