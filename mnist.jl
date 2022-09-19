@@ -55,8 +55,8 @@ x_test, y_test = testset[:]
 x_test_cpu = convert(Array{Float32}, reshape(x_test, 28, 28, 1, :))
 y_test_cpu = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 if args["model_cuda"] >= 0
-    x_test_ = x_test_cpu |> gpu
-    y_test_ = y_test_cpu |> gpu
+    x_test_ = x_test_cpu # |> gpu
+    y_test_ = y_test_cpu # |> gpu
 else
     x_test_ = x_test_cpu
     y_test_ = y_test_cpu
@@ -71,9 +71,9 @@ model = Chain(
     Conv((3, 3), 8 => 16, relu, pad=(1, 1)),
     Conv((3, 3), 16 => 16, relu, pad=(1, 1)),
     x -> reshape(x, (28 * 28 * 16, :)),
-    Dropout(0.4),
+    Dropout(0.5),
     Dense(28 * 28 * 16 => 128, elu),
-    Dropout(0.4),
+    Dropout(0.5),
     Dense(128 => 10, elu)
 )
 if args["model_cuda"] >= 0
