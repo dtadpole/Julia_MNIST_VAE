@@ -28,6 +28,7 @@ if args["model_cuda"] >= 0
     CUDA.device!(args["model_cuda"])
 end
 
+
 ##################################################
 # Training dataset
 trainset = MNIST.traindata()
@@ -46,6 +47,7 @@ x_test, y_test = trainset[:]
 x_test_ = reshape(x_test, 28, 28, 1, :)
 y_test_ = convert(Array{Float32}, onehotbatch(y_test, 0:9))
 # @info "Test data" typeof(trainset[1]) size(trainset[1]) typeof(trainset[2]) size(trainset[2])
+
 
 ##################################################
 # Model
@@ -128,6 +130,9 @@ function test()
     @info "Test result" accuracy(x_test_, y_test_)
 end
 
-train()
 
-test()
+##################################################
+if abspath(PROGRAM_FILE) == @__FILE__
+    train()
+    test()
+end
