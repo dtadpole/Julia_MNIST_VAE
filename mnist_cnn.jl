@@ -100,10 +100,16 @@ function train()
 
     params = Flux.params(model_)
 
-    @info "Before training" accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
+    start_time = time()
+    accuracy_train = accuracy(model_, x_train_, y_train_, size_=10_000)
+    accuracy_test = accuracy(model_, x_test_, y_test_)
+    accuracy_time = round(time() - start_time, digits=1)
+    @info "Before training" accuracy_time accuracy_train accuracy_test
 
     BATCH_SIZE = 100
     for epoch in 1:10
+        # start time
+        start_time = time()
         # shuffle training data
         s = shuffle(1:TRAIN_LENGTH) # s = 1:len_train
         x_train_s = x_train_[:, :, :, s]
@@ -133,7 +139,13 @@ function train()
                 end
             end
         end
-        @info "Train epoch" epoch accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
+        # calculate accuracy
+        train_time = round(time() - start_time, digits=1)
+        start_time = time()
+        accuracy_train = accuracy(model_, x_train_, y_train_, size_=10_000)
+        accuracy_test = accuracy(model_, x_test_, y_test_)
+        accuracy_time = round(time() - start_time, digits=1)
+        @info "[$(train_time)s] Train epoch [$(epoch)] " accuracy_time accuracy_train accuracy_test
         GC.gc(true)
         if args["model_cuda"] >= 0
             CUDA.reclaim()
@@ -146,7 +158,10 @@ end
 # Test
 function test()
     model_ = modelF()
-    @info "Test result" accuracy(model_, x_test_, y_test_, test_mode=true)
+    start_time = time()
+    accuracy_test = accuracy(model_, x_test_, y_test_, test_mode=true)
+    accuracy_time = round(time() - start_time, digits=1)
+    @info "Test result" accuracy_time accuracy_test
 end
 
 
