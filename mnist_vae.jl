@@ -88,7 +88,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     sampling = (mu, log_var) -> begin
         eps = rand(multivariate_normal, size(mu)[end])
         # eps = rand(normal, size(mu))
-        @show size(eps) size(mu) size(log_var)
+        # @show size(eps) size(mu) size(log_var)
         if args["model_cuda"] >= 0
             eps = eps |> gpu
         end
