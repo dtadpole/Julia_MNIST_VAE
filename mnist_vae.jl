@@ -118,7 +118,7 @@ end
 lossF = (model_, x_) -> begin
     x_pred, mu, log_var = model_(x_)
     x_softmax = softmax(x_, dims=1:2)
-    # loss_reconstruction = sum((x_ - x_pred) .^ 2, dims=1:2) # / (size(x_, 1) * size(x_, 2))
+    # loss_reconstruction = mean(sum((x_ - x_pred) .^ 2, dims=1:2)) # / (size(x_, 1) * size(x_, 2))
     loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
     # loss_reconstruction = mean(-sum(x_softmax .* log.(x_softmax) - x_softmax .* log.(x_pred), dims=1:2))
     # loss_kl = sum(log.(log_var / 1.0) + (1.0^2 + (mu - 0.0)^2) / (2 * log_var^2) - 0.5, dims=1)
@@ -147,10 +147,10 @@ model_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 
 ##################################################
 # training
-function train()
+functio
 
-    # opt = ADAM(0.01)
-    opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
+    opt = ADAM(args["train_lr"])
+    # opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
