@@ -11,7 +11,19 @@ function parse_commandline()
         help = "model cuda number"
         arg_type = Int
         default = -1
+
+        "--batch_size"
+        help = "batch size"
+        arg_type = Int
+        default = 100
+
+        "--epochs"
+        help = "epochs"
+        arg_type = Int
+        default = 20
+
     end
+
     return parse_args(s)
 end
 

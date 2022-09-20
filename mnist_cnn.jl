@@ -104,7 +104,7 @@ function train()
 
     params = Flux.params(model_)
 
-    BATCH_SIZE = 100
+    BATCH_SIZE = args["batch_size"]
 
     function train_epoch()
         # shuffle training data
@@ -149,7 +149,7 @@ function train()
         CUDA.reclaim()
     end
 
-    for epoch in 1:10
+    for epoch in 1:args["epochs"]
         # start time
         start_time = time()
         # train epoch
