@@ -112,7 +112,7 @@ function train()
         for i in 1:BATCH_SIZE:TRAIN_LENGTH
             x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
             y_ = y_train_s[:, i:i+BATCH_SIZE-1]
-            @info "sizes" size(x_) size(y_)
+            # @info "sizes" size(x_) size(y_)
             if args["model_cuda"] >= 0
                 x = Array{Float32,4}(undef, size(x_))
                 x[:, :, :, 1:BATCH_SIZE] = x_
