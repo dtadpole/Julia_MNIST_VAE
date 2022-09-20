@@ -61,16 +61,24 @@ lossF = (model_, x_, y_) -> begin
 end
 
 # accuracy function
-accuracy = (model_, x_, y_; test_mode=false) -> begin
+accuracy = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
     # accuracy on cpu
     if args["model_cuda"] >= 0
         model_ = model_ |> cpu
         x_ = x_ |> cpu
         y_ = y_ |> cpu
     end
+    # sample size if specified
+    if size_ !== nothing
+        s = sample(1:size(y_, 2), size_, replace=false)
+        x_ = x_[:, :, :, s]
+        y_ = y_[:, s]
+    end
+    # disable dropout
     if test_mode
         testmode!(model_)
     end
+    # accuracy
     acc = mean(argmax(model_(x_), dims=1) .== argmax(y_, dims=1))
     return round(acc, digits=3)
 end
@@ -92,7 +100,7 @@ function train()
 
     params = Flux.params(model_)
 
-    @info "Before training" accuracy(model_, x_train_, y_train_) accuracy(model_, x_test_, y_test_)
+    @info "Before training" accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
 
     BATCH_SIZE = 100
     for epoch in 1:10
@@ -102,17 +110,21 @@ function train()
         y_train_s = y_train_[:, s]
         # train batch
         for i in 1:BATCH_SIZE:TRAIN_LENGTH
-            x = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
-            y = y_train_s[:, i:i+BATCH_SIZE-1]
+            x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
+            y_ = y_train_s[:, i:i+BATCH_SIZE-1]
             if args["model_cuda"] >= 0
-                x = deepcopy(x) |> gpu
-                y = deepcopy(y) |> gpu
+                x = Array{Float32,4}(undef, size(x_))
+                x[1:28, 1:28, 1:1, 1:BATCH_SIZE] = x
+                x_ = x |> gpu
+                y = Array{Float32,2}()
+                y[1:10, 1:BATCH_SIZE] = y
+                y_ = y |> gpu
             end
             # @info "sizes" size(x) size(y)
-            grads = gradient(() -> lossF(model_, x, y), params)
+            grads = gradient(() -> lossF(model_, x_, y_), params)
             Flux.update!(opt, params, grads)
         end
-        @info "Train epoch" epoch accuracy(model_, x_train_, y_train_) accuracy(model_, x_test_, y_test_)
+        @info "Train epoch" epoch accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
         if args["model_cuda"] >= 0
             CUDA.reclaim()
         end
