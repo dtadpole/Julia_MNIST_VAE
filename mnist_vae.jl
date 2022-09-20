@@ -145,13 +145,13 @@ encoder_, decoder_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 # return a function that returns loss function
 lossF = (encoder, decoder, x_) -> begin
 
-    mu, log_var = encoder(x)
+    mu, log_var = encoder(x_)
     eps = randn(Float32, size(mu)) |> gpu
     # if args["model_cuda"] >= 0
     #     eps = eps |> gpu
     # end
-    z = mu .+ exp.(log_var .* 0.5f0) .* eps
-    x_pred = decoder(z)
+    z_ = mu .+ exp.(log_var .* 0.5f0) .* eps
+    x_pred = decoder(z_)
 
     # x_pred, mu, log_var = model(x_)
     # x_softmax = softmax(x_, dims=1:2)
