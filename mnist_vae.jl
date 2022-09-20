@@ -68,6 +68,9 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     # returns a function that returns the sampling function
     sampler = (mean, log_var) -> begin
         eps = rand(multivariate_normal)
+        if args["model_cuda"] >= 0
+            eps = eps |> gpu
+        end
         eps .* exp.(log_var ./ 2) .+ mean
     end
 
