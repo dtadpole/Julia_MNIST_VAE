@@ -126,17 +126,20 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     @info "Decoder" decoder
 
-    model = (x) -> begin
-        mu, log_var = encoder(x)
-        z = sampling(mu, log_var)
-        y_ = decoder(z)
-        return y_, mu, log_var
-    end
-
     # return a function that returns the model
-    return model, encoder, decoder
+    return encoder, decoder, sampling
 
 end
+
+encoder_, decoder_, sampling_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
+
+model_ = (x) -> begin
+    mu, log_var = encoder_(x)
+    z = sampling_(mu, log_var)
+    y_ = decoder_(z)
+    return y_, mu, log_var
+end
+@info "Model" model_
 
 # return a function that returns loss function
 lossF = (model, x_) -> begin
@@ -165,9 +168,6 @@ lossF_sample = (model, x_, size_::Int=2_000) -> begin
     end
     lossF(model, x_)
 end
-
-model_, encoder_, decoder_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
-@info "Model" model_
 
 ##################################################
 # training
