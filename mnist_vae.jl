@@ -63,6 +63,19 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         ),
     )
 
+    encoder = Chain(
+        Flux.flatten,
+        Dense(dim_1 * dim_2 => channel_n * 16, relu),
+        Split(
+            Chain(
+                Dense(channel_n * 16 => latent_n, relu),
+            ),
+            Chain(
+                Dense(channel_n * 16 => latent_n, relu),
+            ),
+        )
+    )
+
     # encoder to GPU if available
     if args["model_cuda"] >= 0
         encoder = encoder |> gpu
@@ -92,6 +105,13 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         # Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => 1, relu, pad=(1, 1)),
+        x -> reshape(x, (dim_1, dim_2, 1, :)),
+        sigmoid
+    )
+
+    decoder = Chain(
+        Dense(latent_n => channel_n * 16, relu),
+        Dense(channel_n * 16 => dim_1 * dim_2, relu),
         x -> reshape(x, (dim_1, dim_2, 1, :)),
         sigmoid
     )
