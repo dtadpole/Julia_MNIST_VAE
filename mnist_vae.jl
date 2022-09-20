@@ -177,7 +177,7 @@ function train()
                 # Flux.train!(lossF, params, x_, opt, cb=Flux.throttle(() -> @show lossF(model_, x_, x_), 10))
             end)()
             # reclaim GPU memory
-            if mod(i, 4_000) == 1
+            if mod(i, 2_000) == 1
                 @show mean(lossVector)
                 lossVector = Vector{Float32}()
                 GC.gc(true)

@@ -41,7 +41,7 @@ function parse_commandline()
         "--train_weight_decay"
         help = "weight decay"
         arg_type = Float32
-        default = 0.0001f0
+        default = 0.00001f0
 
     end
 
