@@ -103,7 +103,7 @@ function train()
                 Flux.update!(opt, params, grads)
             end)()
             # reclaim GPU memory
-            if mod(i, 4_000) == 1
+            if mod(i, BATCH_SIZE * 100) == 1
                 GC.gc(true)
                 if args["model_cuda"] >= 0
                     CUDA.reclaim()
