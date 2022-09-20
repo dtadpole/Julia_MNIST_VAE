@@ -26,7 +26,17 @@ function parse_commandline()
         "--epochs"
         help = "epochs"
         arg_type = Int
-        default = 20
+        default = 50
+
+        "--lr"
+        help = "learning rate"
+        arg_type = Float32
+        default = 0.001f0
+
+        "--weight_decay"
+        help = "weight decay"
+        arg_type = Float32
+        default = 0.0001f0
 
     end
 

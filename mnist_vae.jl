@@ -112,7 +112,7 @@ end
 # return a function that returns loss function
 lossF = (model_, x_) -> begin
     x_pred, mu, log_var = model_(x_)
-    loss_reconstruction = sum((x_ - x_pred) .^ 2, dims=1:2) / (size(x_, 1) * size(x_, 2))
+    loss_reconstruction = sum((x_ - x_pred) .^ 2, dims=1:2) # / (size(x_, 1) * size(x_, 2))
     # loss_kl = sum(log.(log_var / 1.0) + (1.0^2 + (mu - 0.0)^2) / (2 * log_var^2) - 0.5, dims=1)
     loss_kl = -0.5f0 * sum(1.0f0 .+ log_var .- mu .^ 2 .- exp.(log_var), dims=1)
     loss = mean(loss_reconstruction .+ loss_kl), mean(loss_reconstruction), mean(loss_kl)
@@ -141,7 +141,7 @@ model_ = modelF(28, 28, args["model_channel_n"], LATENT_N)
 function train()
 
     # opt = ADAM(0.01)
-    opt = AdamW(0.001, (0.9, 0.999), 0.0001)
+    opt = AdamW(args["lr"], (0.9, 0.999), args["weight_decay"])
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
