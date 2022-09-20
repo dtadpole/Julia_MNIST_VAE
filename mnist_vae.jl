@@ -134,7 +134,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     end
 
     # return a function that returns the model
-    return model
+    return model, encoder, decoder
 
 end
 
@@ -166,7 +166,7 @@ lossF_sample = (model, x_, size_::Int=2_000) -> begin
     lossF(model, x_)
 end
 
-model_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
+model_, encoder_, decoder_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 @info "Model" model_
 
 ##################################################
@@ -179,7 +179,7 @@ function train()
         opt = opt |> gpu
     end
 
-    params = Flux.params(model_)
+    params = Flux.params(model_, encoder_, decoder_)
 
     BATCH_SIZE = args["train_batch_size"]
 
