@@ -26,21 +26,28 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     # returns a function that returns the encoder
     encoder = Chain(
         Conv((3, 3), 1 => channel_n, relu, pad=(1, 1)),
-        MaxPool((2, 2)),
+        # MaxPool((2, 2)),
         Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         # MaxPool((2, 2)),
         # Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        Flux.flatten,
         Split(
             Chain(
+                Conv((1, 1), channel_n => div(channel_n, 4), relu),
+                Flux.flatten,
                 # Dropout(0.5),
-                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
+                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, elu),
+                # Dropout(0.5),
+                # Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 2 => latent_n, tanh), # mu : mean
             ),
             Chain(
+                Conv((1, 1), channel_n => div(channel_n, 4), relu),
+                Flux.flatten,
                 # Dropout(0.5),
-                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
+                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, elu),
+                # Dropout(0.5),
+                # Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 2 => latent_n, elu), # log_var
                 # softmax
@@ -76,13 +83,14 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     decoder = Chain(
         Dense(latent_n => channel_n * 2, elu),
         # Dropout(0.5),
-        Dense(channel_n * 2 => div(dim_1, 2) * div(dim_2, 2) * channel_n, elu),
-        x -> reshape(x, (div(dim_1, 2), div(dim_2, 2), channel_n, :)),
+        Dense(channel_n * 2 => div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4), elu),
         # Dropout(0.5),
+        x -> reshape(x, (div(dim_1, 1), div(dim_2, 1), div(channel_n, 4), :)),
+        ConvTranspose((1, 1), div(channel_n, 4) => channel_n, relu),
         # ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         # Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        Upsample((2, 2)),
+        # Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => 1, relu, pad=(1, 1)),
         x -> reshape(x, (dim_1, dim_2, 1, :)),
         sigmoid
