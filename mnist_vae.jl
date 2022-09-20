@@ -21,7 +21,7 @@ Flux.@functor Split
 
 # multivariate normal distribution
 multivariate_normal = Distributions.MvNormal(zeros(Float32, args["latent_n"]), ones(Float32, args["latent_n"]))
-normal = Distributions.Normal(0, 1)
+normal = Distributions.Normal(0.0f0, 1.0f0)
 # multivariate_normal to GPU if available
 # if args["model_cuda"] >= 0
 #     multivariate_normal = multivariate_normal |> gpu
