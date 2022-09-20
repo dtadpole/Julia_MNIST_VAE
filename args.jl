@@ -26,7 +26,7 @@ function parse_commandline()
         "--train_batch_size"
         help = "batch size"
         arg_type = Int
-        default = 50
+        default = 100
 
         "--train_epochs"
         help = "train epochs"
@@ -36,12 +36,12 @@ function parse_commandline()
         "--train_lr"
         help = "learning rate"
         arg_type = Float32
-        default = 0.0005f0
+        default = 0.001f0
 
         "--train_weight_decay"
         help = "weight decay"
         arg_type = Float32
-        default = 0.00005f0
+        default = 0.0001f0
 
     end
 

@@ -179,7 +179,8 @@ function train()
         opt = opt |> gpu
     end
 
-    params = Flux.params(model_, encoder_, decoder_)
+    params = Flux.params(encoder_, decoder_)
+    @show params
 
     BATCH_SIZE = args["train_batch_size"]
 
@@ -204,7 +205,7 @@ function train()
                 # Flux.train!(lossF, params, x_, opt, cb=Flux.throttle(() -> @show lossF(model_, x_, x_), 10))
             end)()
             # reclaim GPU memory
-            if mod(i, 2_000) == 1
+            if mod(i, BATCH_SIZE * 50) == 1
                 @show mean(lossVector)
                 lossVector = Vector{Float32}()
                 GC.gc(true)
