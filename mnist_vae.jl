@@ -117,7 +117,7 @@ end
 # return a function that returns loss function
 lossF = (model_, x_) -> begin
     x_pred, mu, log_var = model_(x_)
-    x_softmax = softmax(x_, dims=1:2)
+    # x_softmax = softmax(x_, dims=1:2)
     loss_reconstruction = mean(sum((x_ - x_pred) .^ 2, dims=1:2)) # / (size(x_, 1) * size(x_, 2))
     # loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
     # loss_reconstruction = mean(-sum(x_softmax .* log.(x_softmax) - x_softmax .* log.(x_pred), dims=1:2))
