@@ -6,8 +6,6 @@ using Random
 using StatsBase
 using Distributions
 
-LATENT_N = args["latent_n"]
-
 ##################################################
 # custom split layer
 struct Split{T}
@@ -133,7 +131,7 @@ lossF_sample = (model_, x_, size_::Int=2_000) -> begin
     lossF(model_, x_)
 end
 
-model_ = modelF(28, 28, args["model_channel_n"], LATENT_N)
+model_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 @info "Model" model_
 
 ##################################################
