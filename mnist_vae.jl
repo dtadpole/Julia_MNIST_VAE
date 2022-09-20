@@ -115,7 +115,7 @@ lossF = (model_, x_) -> begin
     loss = mean(loss_reconstruction .+ loss_kl), mean(loss_reconstruction), mean(loss_kl)
 end
 
-lossF_sample = (model_, x_, size_::Int=10_000) -> begin
+lossF_sample = (model_, x_, size_::Int=2_000) -> begin
     len = size(x_)[end]
     if size_ > 0 && size_ <= len
         s = sample(1:len, size_, replace=false)
@@ -151,7 +151,10 @@ function train()
             (() -> begin
                 x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
                 if args["model_cuda"] >= 0
-                    x_ = x_ |> gpu
+                    x = Array{Float32,4}(undef, size(x_))
+                    x[:, :, :, 1:BATCH_SIZE] = x_
+                    x_ = x |> gpu
+                    # x_ = x_ |> gpu
                 end
                 grads = gradient(() -> lossF(model_, x_)[1], params)
                 Flux.update!(opt, params, grads)
