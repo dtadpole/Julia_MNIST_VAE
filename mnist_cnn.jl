@@ -123,7 +123,8 @@ function train()
             end
             grads = gradient(() -> lossF(model_, x_, y_), params)
             Flux.update!(opt, params, grads)
-            if mod(i, 10) == 0 && args["model_cuda"] >= 0
+            # reclaim GPU memory
+            if mod(i, 100) == 0 && args["model_cuda"] >= 0
                 CUDA.reclaim()
             end
         end
