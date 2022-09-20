@@ -143,6 +143,11 @@ function train()
     accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
     accuracy_time = round(time() - start_time, digits=1)
     @info "Before training" accuracy_time accuracy_train accuracy_test
+    # GC and reclaim GPU memory
+    GC.gc(true)
+    if args["model_cuda"] >= 0
+        CUDA.reclaim()
+    end
 
     for epoch in 1:10
         # start time
@@ -161,6 +166,11 @@ function train()
         accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
         accuracy_time = round(time() - start_time, digits=1)
         @info "[$(train_time)s] Train epoch [$(epoch)]" accuracy_time accuracy_train accuracy_test
+        # GC and reclaim GPU memory
+        GC.gc(true)
+        if args["model_cuda"] >= 0
+            CUDA.reclaim()
+        end
     end
 end
 
