@@ -178,9 +178,10 @@ function train()
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
+    @info "Optimizer" opt
 
     params = Flux.params(encoder_, decoder_)
-    @show params
+    # @show params
 
     BATCH_SIZE = args["train_batch_size"]
 
