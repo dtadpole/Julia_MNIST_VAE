@@ -13,6 +13,11 @@ function parse_commandline()
         arg_type = Int
         default = -1
 
+        "--model_channel_n"
+        help = "model channel number"
+        arg_type = Int
+        default = 32
+
         "--batch_size"
         help = "batch size"
         arg_type = Int

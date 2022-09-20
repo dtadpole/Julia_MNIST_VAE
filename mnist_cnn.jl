@@ -1,48 +1,25 @@
-include("./args.jl")
+include("./data.jl")
 
-using MLDatasets
 using Flux
 using CUDA
 using Random
-using OneHotArrays
 using StatsBase
 
 
 ##################################################
-# Training dataset
-trainset = MNIST.traindata()
-
-x_train_, y_train_ = trainset[:]
-x_train_ = convert(Array{Float32}, reshape(x_train_, 28, 28, 1, :))
-y_train_ = convert(Array{Float32}, onehotbatch(y_train_, 0:9))
-@info "Train data" typeof(x_train_) size(x_train_) typeof(y_train_) size(y_train_)
-
-TRAIN_LENGTH = size(y_train_, 2)
-
-##################################################
-# Test dataset
-testset = MNIST.testdata()
-
-x_test_, y_test_ = testset[:]
-x_test_ = convert(Array{Float32}, reshape(x_test_, 28, 28, 1, :))
-y_test_ = convert(Array{Float32}, onehotbatch(y_test_, 0:9))
-@info "Test data" typeof(x_test_) size(x_test_) typeof(y_test_) size(y_test_)
-
-
-##################################################
-# returns a function that returns the model
-modelF = (() -> begin
+# returns a constructed model
+modelF = (dim_1::Int, dim_2::Int, channel_n::Int) -> begin
     model = Chain(
-        Conv((3, 3), 1 => 32, relu, pad=(1, 1)),
+        Conv((3, 3), 1 => channel_n, relu, pad=(1, 1)),
         MaxPool((2, 2)),
-        Conv((3, 3), 32 => 32, relu, pad=(1, 1)),
+        Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         MaxPool((2, 2)),
-        Conv((3, 3), 32 => 32, relu, pad=(1, 1)),
-        x -> reshape(x, (7 * 7 * 32, :)),
+        Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        Flux.flatten,
         Dropout(0.5),
-        Dense(7 * 7 * 32 => 128, elu),
+        Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
         Dropout(0.5),
-        Dense(128 => 10, elu),
+        Dense(channel_n * 4 => 10, elu),
         softmax
     )
     # model to GPU if available
@@ -51,24 +28,18 @@ modelF = (() -> begin
     end
     # @info "Model" model
     # return a function that returns the model
-    return () -> model
-end)()
+    return model
+end
 
-# return a function that returns loss function
+# loss function
 lossF = (model_, x_, y_) -> begin
     y_pred = model_(x_)
     mean(-sum(y_ .* log.(y_pred), dims=1))
 end
 
 # accuracy function
-accuracy = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
-    # accuracy on cpu
-    # if args["model_cuda"] >= 0
-    #     model_ = model_ |> cpu
-    #     x_ = x_ |> cpu
-    #     y_ = y_ |> cpu
-    # end
-    # sample size if specified
+accuracyF = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
+    # if sample size if specified
     if size_ !== nothing
         s = sample(1:size(y_, 2), size_, replace=false)
         x_ = x_[:, :, :, s]
@@ -87,14 +58,15 @@ accuracy = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
     return round(acc, digits=3)
 end
 
+# get model
+model_ = modelF(28, 28, args["model_channel_n"])
+@info "Model" model_
 
 ##################################################
 # training
 function train()
 
-    # get model
-    model_ = modelF()
-    @info "Model" model_
+    global model_
 
     # opt = ADAM(0.01)
     opt = AdamW(0.001, (0.9, 0.999), 0.0001)
@@ -131,7 +103,7 @@ function train()
                 Flux.update!(opt, params, grads)
             end)()
             # reclaim GPU memory
-            if mod(i, 20) == 0
+            if mod(i, 2_000) == 1
                 GC.gc(true)
                 if args["model_cuda"] >= 0
                     CUDA.reclaim()
@@ -141,8 +113,8 @@ function train()
     end
 
     start_time = time()
-    accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
-    accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
+    accuracy_train = accuracyF(model_, x_train_, y_train_, size_=5_000)
+    accuracy_test = accuracyF(model_, x_test_, y_test_, size_=5_000)
     accuracy_time = round(time() - start_time, digits=1)
     @info "Before training" accuracy_time accuracy_train accuracy_test
     # GC and reclaim GPU memory
@@ -164,8 +136,8 @@ function train()
         end
         # calculate accuracy
         start_time = time()
-        accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
-        accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
+        accuracy_train = accuracyF(model_, x_train_, y_train_, size_=5_000)
+        accuracy_test = accuracyF(model_, x_test_, y_test_, size_=5_000)
         accuracy_time = round(time() - start_time, digits=1)
         @info "[$(train_time)s] Train epoch [$(epoch)]" accuracy_time accuracy_train accuracy_test
         # GC and reclaim GPU memory
@@ -180,9 +152,9 @@ end
 ##################################################
 # Test
 function test()
-    model_ = modelF()
+    global model_
     start_time = time()
-    accuracy_test = accuracy(model_, x_test_, y_test_, test_mode=true, size_=5_000)
+    accuracy_test = accuracyF(model_, x_test_, y_test_, test_mode=true, size_=5_000)
     accuracy_time = round(time() - start_time, digits=1)
     @info "Test result" accuracy_time accuracy_test
 end
