@@ -147,7 +147,7 @@ model_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 
 ##################################################
 # training
-functio
+function train()
 
     opt = ADAM(args["train_lr"])
     # opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
