@@ -128,23 +128,32 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     @info "Decoder" decoder
 
     # return a function that returns the model
-    return encoder, decoder, sampling
+    return encoder, decoder
 
 end
 
-encoder_, decoder_, sampling_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
+encoder_, decoder_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 
-model_ = (x) -> begin
-    mu, log_var = encoder_(x)
-    z = sampling_(mu, log_var)
-    y_ = decoder_(z)
-    return y_, mu, log_var
-end
-@info "Model" model_
+# model_ = (x) -> begin
+#     mu, log_var = encoder_(x)
+#     z = sampling_(mu, log_var)
+#     y_ = decoder_(z)
+#     return y_, mu, log_var
+# end
+# @info "Model" model_
 
 # return a function that returns loss function
-lossF = (model, x_) -> begin
-    x_pred, mu, log_var = model(x_)
+lossF = (encoder, decoder, x_) -> begin
+
+    mu, log_var = encoder(x)
+    eps = randn(Float32, size(mu)) |> gpu
+    # if args["model_cuda"] >= 0
+    #     eps = eps |> gpu
+    # end
+    z = mu .+ exp.(log_var .* 0.5f0) .* eps
+    x_pred = decoder(z)
+
+    # x_pred, mu, log_var = model(x_)
     # x_softmax = softmax(x_, dims=1:2)
     # loss_reconstruction = mean(sum((x_ - x_pred) .^ 2, dims=1:2)) # / (size(x_, 1) * size(x_, 2))
     loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
@@ -156,7 +165,7 @@ lossF = (model, x_) -> begin
     return loss, loss_reconstruction, loss_kl
 end
 
-lossF_sample = (model, x_, size_::Int=2_000) -> begin
+lossF_sample = (encoder, decoder, x_, size_::Int=2_000) -> begin
     len = size(x_)[end]
     if size_ > 0 && size_ <= len
         s = sample(1:len, size_, replace=false)
@@ -168,7 +177,7 @@ lossF_sample = (model, x_, size_::Int=2_000) -> begin
         x_ = x |> gpu
         # x_ = x_ |> gpu
     end
-    lossF(model, x_)
+    lossF(encoder, decoder, x_)
 end
 
 ##################################################
@@ -202,9 +211,9 @@ function train()
                     # x_ = x |> gpu
                     x_ = x_ |> gpu
                 end
-                grads = gradient(() -> lossF(model_, x_)[1], params)
+                grads = gradient(() -> lossF(encoder_, decoder_, x_)[1], params)
                 Flux.update!(opt, params, grads)
-                push!(lossVector, lossF(model_, x_)[1])
+                push!(lossVector, lossF(encoder_, decoder_, x_)[1])
                 # Flux.train!(lossF, params, x_, opt, cb=Flux.throttle(() -> @show lossF(model_, x_, x_), 10))
             end)()
             # reclaim GPU memory
@@ -220,8 +229,8 @@ function train()
     end
 
     start_time = time()
-    loss_train = lossF_sample(model_, x_train_)
-    loss_test = lossF_sample(model_, x_test_)
+    loss_train = lossF_sample(encoder_, decoder_, x_train_)
+    loss_test = lossF_sample(encoder_, decoder_, x_test_)
     loss_time = round(time() - start_time, digits=1)
     @info "Before training" loss_time loss_train loss_test
     # GC and reclaim GPU memory
@@ -243,8 +252,8 @@ function train()
         end
         # calculate accuracy
         start_time = time()
-        loss_train = lossF_sample(model_, x_train_)
-        loss_test = lossF_sample(model_, x_test_)
+        loss_train = lossF_sample(encoder_, decoder_, x_train_)
+        loss_test = lossF_sample(encoder_, decoder_, x_test_)
         loss_time = round(time() - start_time, digits=1)
         @info "[$(train_time)s] Train epoch [$(epoch)]" loss_time loss_train loss_test
         # GC and reclaim GPU memory
