@@ -121,6 +121,12 @@ lossF_sample = (model_, x_, size_::Int=2_000) -> begin
         s = sample(1:len, size_, replace=false)
         x_ = x_[:, :, :, s]
     end
+    if args["model_cuda"] >= 0
+        x = Array{Float32,4}(undef, size(x_))
+        x[:, :, :, 1:size_] = x_
+        x_ = x |> gpu
+        # x_ = x_ |> gpu
+    end
     lossF(model_, x_)
 end
 
