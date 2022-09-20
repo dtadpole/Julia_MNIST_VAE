@@ -63,16 +63,20 @@ end
 # accuracy function
 accuracy = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
     # accuracy on cpu
-    if args["model_cuda"] >= 0
-        model_ = model_ |> cpu
-        x_ = x_ |> cpu
-        y_ = y_ |> cpu
-    end
+    # if args["model_cuda"] >= 0
+    #     model_ = model_ |> cpu
+    #     x_ = x_ |> cpu
+    #     y_ = y_ |> cpu
+    # end
     # sample size if specified
     if size_ !== nothing
         s = sample(1:size(y_, 2), size_, replace=false)
         x_ = x_[:, :, :, s]
         y_ = y_[:, s]
+        if args["model_cuda"] >= 0
+            x_ = x_ |> gpu
+            y_ = y_ |> gpu
+        end
     end
     # disable dropout
     if test_mode
@@ -100,16 +104,9 @@ function train()
 
     params = Flux.params(model_)
 
-    start_time = time()
-    accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
-    accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
-    accuracy_time = round(time() - start_time, digits=1)
-    @info "Before training" accuracy_time accuracy_train accuracy_test
-
     BATCH_SIZE = 100
-    for epoch in 1:10
-        # start time
-        start_time = time()
+
+    function train_epoch()
         # shuffle training data
         s = shuffle(1:TRAIN_LENGTH) # s = 1:len_train
         x_train_s = x_train_[:, :, :, s]
@@ -139,17 +136,31 @@ function train()
                 end
             end
         end
-        # calculate accuracy
-        train_time = round(time() - start_time, digits=1)
+    end
+
+    start_time = time()
+    accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
+    accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
+    accuracy_time = round(time() - start_time, digits=1)
+    @info "Before training" accuracy_time accuracy_train accuracy_test
+
+    for epoch in 1:10
+        # start time
         start_time = time()
-        accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
-        accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
-        accuracy_time = round(time() - start_time, digits=1)
-        @info "[$(train_time)s] Train epoch [$(epoch)] " accuracy_time accuracy_train accuracy_test
+        # train epoch
+        train_epoch()
+        train_time = round(time() - start_time, digits=1)
+        # GC and reclaim GPU memory
         GC.gc(true)
         if args["model_cuda"] >= 0
             CUDA.reclaim()
         end
+        # calculate accuracy
+        start_time = time()
+        accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
+        accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
+        accuracy_time = round(time() - start_time, digits=1)
+        @info "[$(train_time)s] Train epoch [$(epoch)]" accuracy_time accuracy_train accuracy_test
     end
 end
 
