@@ -70,7 +70,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     end
 
     # returns a function that returns the sampling function
-    sampler = (mu, log_var) -> begin
+    sampling = (mu, log_var) -> begin
         eps = rand(multivariate_normal, size(mu)[end])
         if args["model_cuda"] >= 0
             eps = eps |> gpu
@@ -104,7 +104,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     model = (x) -> begin
         mu, log_var = encoder(x)
-        z = sampler(mu, log_var)
+        z = sampling(mu, log_var)
         y_ = decoder(z)
         return y_, mu, log_var
     end
