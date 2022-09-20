@@ -6,7 +6,7 @@ using Random
 using StatsBase
 using Distributions
 
-LATENT_N = 8
+LATENT_N = args["latent_n"]
 
 ##################################################
 # custom split layer
@@ -30,19 +30,19 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         Conv((3, 3), 1 => channel_n, relu, pad=(1, 1)),
         MaxPool((2, 2)),
         Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        # MaxPool((2, 2)),
-        # Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        MaxPool((2, 2)),
+        Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Flux.flatten,
         Split(
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 4 => latent_n, tanh), # mu : mean
             ),
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 4 => latent_n, elu), # log_var
                 # softmax
@@ -78,11 +78,11 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     decoder = Chain(
         Dense(latent_n => channel_n * 4, elu),
         # Dropout(0.5),
-        Dense(channel_n * 4 => div(dim_1, 2) * div(dim_2, 2) * channel_n, elu),
-        x -> reshape(x, (div(dim_1, 2), div(dim_2, 2), channel_n, :)),
+        Dense(channel_n * 4 => div(dim_1, 4) * div(dim_2, 4) * channel_n, elu),
+        x -> reshape(x, (div(dim_1, 4), div(dim_2, 4), channel_n, :)),
         # Dropout(0.5),
-        # ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        # Upsample((2, 2)),
+        ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => 1, relu, pad=(1, 1)),
@@ -141,14 +141,14 @@ model_ = modelF(28, 28, args["model_channel_n"], LATENT_N)
 function train()
 
     # opt = ADAM(0.01)
-    opt = AdamW(args["lr"], (0.9, 0.999), args["weight_decay"])
+    opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
 
     params = Flux.params(model_)
 
-    BATCH_SIZE = args["batch_size"]
+    BATCH_SIZE = args["train_batch_size"]
 
     function train_epoch()
         lossVector = Vector{Float32}()
@@ -193,7 +193,7 @@ function train()
         CUDA.reclaim()
     end
 
-    for epoch in 1:args["epochs"]
+    for epoch in 1:args["train_epochs"]
         # start time
         start_time = time()
         # train epoch

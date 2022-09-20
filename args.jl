@@ -18,22 +18,27 @@ function parse_commandline()
         arg_type = Int
         default = 32
 
-        "--batch_size"
+        "--latent_n"
+        help = "latent variable number"
+        arg_type = Int
+        default = 2
+
+        "--train_batch_size"
         help = "batch size"
         arg_type = Int
         default = 100
 
-        "--epochs"
-        help = "epochs"
+        "--train_epochs"
+        help = "train epochs"
         arg_type = Int
         default = 50
 
-        "--lr"
+        "--train_lr"
         help = "learning rate"
         arg_type = Float32
         default = 0.001f0
 
-        "--weight_decay"
+        "--train_weight_decay"
         help = "weight decay"
         arg_type = Float32
         default = 0.0001f0

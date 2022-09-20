@@ -69,14 +69,14 @@ function train()
     global model_
 
     # opt = ADAM(0.01)
-    opt = AdamW(0.001, (0.9, 0.999), 0.0001)
+    opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
 
     params = Flux.params(model_)
 
-    BATCH_SIZE = args["batch_size"]
+    BATCH_SIZE = args["train_batch_size"]
 
     function train_epoch()
         # shuffle training data
@@ -123,7 +123,7 @@ function train()
         CUDA.reclaim()
     end
 
-    for epoch in 1:args["epochs"]
+    for epoch in 1:args["train_epochs"]
         # start time
         start_time = time()
         # train epoch
