@@ -101,8 +101,8 @@ function train()
     params = Flux.params(model_)
 
     start_time = time()
-    accuracy_train = accuracy(model_, x_train_, y_train_, size_=10_000)
-    accuracy_test = accuracy(model_, x_test_, y_test_)
+    accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
+    accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
     accuracy_time = round(time() - start_time, digits=1)
     @info "Before training" accuracy_time accuracy_train accuracy_test
 
@@ -142,8 +142,8 @@ function train()
         # calculate accuracy
         train_time = round(time() - start_time, digits=1)
         start_time = time()
-        accuracy_train = accuracy(model_, x_train_, y_train_, size_=10_000)
-        accuracy_test = accuracy(model_, x_test_, y_test_)
+        accuracy_train = accuracy(model_, x_train_, y_train_, size_=5_000)
+        accuracy_test = accuracy(model_, x_test_, y_test_, size_=5_000)
         accuracy_time = round(time() - start_time, digits=1)
         @info "[$(train_time)s] Train epoch [$(epoch)] " accuracy_time accuracy_train accuracy_test
         GC.gc(true)
@@ -159,7 +159,7 @@ end
 function test()
     model_ = modelF()
     start_time = time()
-    accuracy_test = accuracy(model_, x_test_, y_test_, test_mode=true)
+    accuracy_test = accuracy(model_, x_test_, y_test_, test_mode=true, size_=5_000)
     accuracy_time = round(time() - start_time, digits=1)
     @info "Test result" accuracy_time accuracy_test
 end
