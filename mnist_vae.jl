@@ -28,21 +28,21 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         Conv((3, 3), 1 => channel_n, relu, pad=(1, 1)),
         MaxPool((2, 2)),
         Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        MaxPool((2, 2)),
-        Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        # MaxPool((2, 2)),
+        # Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Flux.flatten,
         Split(
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
-                Dense(channel_n * 4 => latent_n, tanh), # mu : mean
+                Dense(channel_n * 2 => latent_n, tanh), # mu : mean
             ),
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
-                Dense(channel_n * 4 => latent_n, elu), # log_var
+                Dense(channel_n * 2 => latent_n, elu), # log_var
                 # softmax
             )
         ),
@@ -74,13 +74,13 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     # returns a function that returns the decoder
     decoder = Chain(
-        Dense(latent_n => channel_n * 4, elu),
+        Dense(latent_n => channel_n * 2, elu),
         # Dropout(0.5),
-        Dense(channel_n * 4 => div(dim_1, 4) * div(dim_2, 4) * channel_n, elu),
-        x -> reshape(x, (div(dim_1, 4), div(dim_2, 4), channel_n, :)),
+        Dense(channel_n * 2 => div(dim_1, 2) * div(dim_2, 2) * channel_n, elu),
+        x -> reshape(x, (div(dim_1, 2), div(dim_2, 2), channel_n, :)),
         # Dropout(0.5),
-        ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        Upsample((2, 2)),
+        # ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        # Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => 1, relu, pad=(1, 1)),
