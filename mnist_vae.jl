@@ -116,8 +116,8 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 end
 
 # return a function that returns loss function
-lossF = (model_, x_) -> begin
-    x_pred, mu, log_var = model_(x_)
+lossF = (model, x_) -> begin
+    x_pred, mu, log_var = model(x_)
     # x_softmax = softmax(x_, dims=1:2)
     loss_reconstruction = mean(sum((x_ - x_pred) .^ 2, dims=1:2)) # / (size(x_, 1) * size(x_, 2))
     # loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
@@ -128,7 +128,7 @@ lossF = (model_, x_) -> begin
     return loss, loss_reconstruction, loss_kl
 end
 
-lossF_sample = (model_, x_, size_::Int=2_000) -> begin
+lossF_sample = (model, x_, size_::Int=2_000) -> begin
     len = size(x_)[end]
     if size_ > 0 && size_ <= len
         s = sample(1:len, size_, replace=false)
@@ -140,7 +140,7 @@ lossF_sample = (model_, x_, size_::Int=2_000) -> begin
         x_ = x |> gpu
         # x_ = x_ |> gpu
     end
-    lossF(model_, x_)
+    lossF(model, x_)
 end
 
 model_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
