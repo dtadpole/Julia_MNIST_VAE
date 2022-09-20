@@ -114,10 +114,10 @@ function train()
             y_ = y_train_s[:, i:i+BATCH_SIZE-1]
             if args["model_cuda"] >= 0
                 x = Array{Float32,4}(undef, size(x_))
-                x[1:28, 1:28, 1:1, 1:BATCH_SIZE] = x_
+                x[:, :, :, 1:BATCH_SIZE] = x_
                 x_ = x |> gpu
-                y = Array{Float32,2}()
-                y[1:10, 1:BATCH_SIZE] = y_
+                y = Array{Float32,2}(undef, size(y_))
+                y[:, 1:BATCH_SIZE] = y_
                 y_ = y |> gpu
             end
             # @info "sizes" size(x) size(y)
