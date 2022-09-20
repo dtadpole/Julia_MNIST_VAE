@@ -72,7 +72,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     # returns a function that returns the sampling function
     sampler = (mean, log_var) -> begin
-        eps = rand(multivariate_normal)
+        eps = rand(multivariate_normal, size(mean)[end])
         if args["model_cuda"] >= 0
             eps = eps |> gpu
         end
@@ -120,8 +120,8 @@ lossF = (model_, x_) -> begin
     x_pred, mu, log_var = model_(x_)
     x_softmax = softmax(x_, dims=1:2)
     # loss_reconstruction = sum((x_ - x_pred) .^ 2, dims=1:2) # / (size(x_, 1) * size(x_, 2))
-    # loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
-    loss_reconstruction = mean(-sum(x_softmax .* log.(x_softmax) - x_softmax .* log.(x_pred), dims=1:2))
+    loss_reconstruction = mean(-sum(x_ .* log.(x_pred) .+ (1 .- x_) .* log.(1 .- x_pred), dims=1:2))
+    # loss_reconstruction = mean(-sum(x_softmax .* log.(x_softmax) - x_softmax .* log.(x_pred), dims=1:2))
     # loss_kl = sum(log.(log_var / 1.0) + (1.0^2 + (mu - 0.0)^2) / (2 * log_var^2) - 0.5, dims=1)
     loss_kl = mean(-0.5f0 * sum(1.0f0 .+ log_var .- mu .^ 2 .- exp.(log_var), dims=1))
     loss = loss_reconstruction + loss_kl
