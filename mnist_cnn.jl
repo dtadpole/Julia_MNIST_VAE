@@ -124,11 +124,15 @@ function train()
             grads = gradient(() -> lossF(model_, x_, y_), params)
             Flux.update!(opt, params, grads)
             # reclaim GPU memory
-            if mod(i, 100) == 0 && args["model_cuda"] >= 0
-                CUDA.reclaim()
+            if mod(i, 20) == 0
+                GC.gc(true)
+                if args["model_cuda"] >= 0
+                    CUDA.reclaim()
+                end
             end
         end
         @info "Train epoch" epoch accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
+        GC.gc(true)
         if args["model_cuda"] >= 0
             CUDA.reclaim()
         end
