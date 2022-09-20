@@ -146,7 +146,7 @@ encoder_, decoder_ = modelF(28, 28, args["model_channel_n"], args["latent_n"])
 lossF = (encoder, decoder, x_) -> begin
 
     mu, log_var = encoder(x_)
-    eps = randn(Float32, size(mu)) |> gpu
+    eps = randn(Float32, size(log_var)) |> gpu
     # if args["model_cuda"] >= 0
     #     eps = eps |> gpu
     # end
@@ -184,8 +184,8 @@ end
 # training
 function train()
 
-    opt = ADAM(args["train_lr"])
-    # opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
+    # opt = ADAM(args["train_lr"])
+    opt = AdamW(args["train_lr"], (0.9, 0.999), args["train_weight_decay"])
     if args["model_cuda"] >= 0
         opt = opt |> gpu
     end
@@ -218,7 +218,7 @@ function train()
             end)()
             # reclaim GPU memory
             if mod(i, BATCH_SIZE * 50) == 1
-                @show mean(lossVector)
+                @show mean(lossVector) size(lossVector)
                 lossVector = Vector{Float32}()
                 GC.gc(true)
                 if args["model_cuda"] >= 0
