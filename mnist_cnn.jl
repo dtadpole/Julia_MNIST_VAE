@@ -104,7 +104,7 @@ function train()
 
     params = Flux.params(model_)
 
-    BATCH_SIZE = 100
+    BATCH_SIZE = args["batch_size"]
 
     function train_epoch()
         # shuffle training data
@@ -113,21 +113,23 @@ function train()
         y_train_s = y_train_[:, s]
         # train batch
         for i in 1:BATCH_SIZE:TRAIN_LENGTH
-            x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
-            y_ = y_train_s[:, i:i+BATCH_SIZE-1]
-            # @info "sizes" size(x_) size(y_)
-            if args["model_cuda"] >= 0
-                # x = Array{Float32,4}(undef, size(x_))
-                # x[:, :, :, 1:BATCH_SIZE] = x_
-                # x_ = x |> gpu
-                x_ = x_ |> gpu
-                # y = Array{Float32,2}(undef, size(y_))
-                # y[:, 1:BATCH_SIZE] = y_
-                # y_ = y |> gpu
-                y_ = y_ |> gpu
-            end
-            grads = gradient(() -> lossF(model_, x_, y_), params)
-            Flux.update!(opt, params, grads)
+            (() -> begin
+                x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
+                y_ = y_train_s[:, i:i+BATCH_SIZE-1]
+                # @info "sizes" size(x_) size(y_)
+                if args["model_cuda"] >= 0
+                    # x = Array{Float32,4}(undef, size(x_))
+                    # x[:, :, :, 1:BATCH_SIZE] = x_
+                    # x_ = x |> gpu
+                    x_ = x_ |> gpu
+                    # y = Array{Float32,2}(undef, size(y_))
+                    # y[:, 1:BATCH_SIZE] = y_
+                    # y_ = y |> gpu
+                    y_ = y_ |> gpu
+                end
+                grads = gradient(() -> lossF(model_, x_, y_), params)
+                Flux.update!(opt, params, grads)
+            end)()
             # reclaim GPU memory
             if mod(i, 20) == 0
                 GC.gc(true)
@@ -149,7 +151,7 @@ function train()
         CUDA.reclaim()
     end
 
-    for epoch in 1:10
+    for epoch in 1:args["epochs"]
         # start time
         start_time = time()
         # train epoch
