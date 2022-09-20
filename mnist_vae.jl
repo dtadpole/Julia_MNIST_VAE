@@ -19,6 +19,15 @@ Flux.@functor Split
 (m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 
 
+# multivariate normal distribution
+multivariate_normal = Distributions.MvNormal(zeros(Float32, args["latent_n"]), ones(Float32, args["latent_n"]))
+# multivariate_normal to GPU if available
+# if args["model_cuda"] >= 0
+#     multivariate_normal = multivariate_normal |> gpu
+# end
+
+
+
 ##################################################
 # returns a function that returns the model
 modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
@@ -60,14 +69,6 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     end
 
     @info "Encoder" encoder
-
-    # multivariate normal distribution
-    multivariate_normal = Distributions.MvNormal(zeros(Float32, latent_n), ones(Float32, latent_n))
-
-    # multivariate_normal to GPU if available
-    if args["model_cuda"] >= 0
-        multivariate_normal = multivariate_normal |> gpu
-    end
 
     # returns a function that returns the sampling function
     sampling = (mu, log_var) -> begin
