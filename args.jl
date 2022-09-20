@@ -1,4 +1,5 @@
 using ArgParse
+using CUDA
 
 ##################################################
 # Parse command line arguments
