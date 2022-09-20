@@ -70,12 +70,12 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     end
 
     # returns a function that returns the sampling function
-    sampler = (mean, log_var) -> begin
-        eps = rand(multivariate_normal, size(mean)[end])
+    sampler = (mu, log_var) -> begin
+        eps = rand(multivariate_normal, size(mu)[end])
         if args["model_cuda"] >= 0
             eps = eps |> gpu
         end
-        return eps .* exp.(log_var .* 0.5f0) .+ mean
+        return mu .+ exp.(log_var .* 0.5f0) .* eps
     end
 
     # returns a function that returns the decoder
