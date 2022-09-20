@@ -112,6 +112,7 @@ function train()
         for i in 1:BATCH_SIZE:TRAIN_LENGTH
             x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
             y_ = y_train_s[:, i:i+BATCH_SIZE-1]
+            @info "sizes" size(x_) size(y_)
             if args["model_cuda"] >= 0
                 x = Array{Float32,4}(undef, size(x_))
                 x[:, :, :, 1:BATCH_SIZE] = x_
@@ -120,9 +121,11 @@ function train()
                 y[:, 1:BATCH_SIZE] = y_
                 y_ = y |> gpu
             end
-            # @info "sizes" size(x) size(y)
             grads = gradient(() -> lossF(model_, x_, y_), params)
             Flux.update!(opt, params, grads)
+            if mod(i, 10) == 0 && args["model_cuda"] >= 0
+                CUDA.reclaim()
+            end
         end
         @info "Train epoch" epoch accuracy(model_, x_train_, y_train_, size_=10_000) accuracy(model_, x_test_, y_test_)
         if args["model_cuda"] >= 0
