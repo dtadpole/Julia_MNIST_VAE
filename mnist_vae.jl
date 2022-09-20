@@ -21,6 +21,7 @@ Flux.@functor Split
 
 # multivariate normal distribution
 multivariate_normal = Distributions.MvNormal(zeros(Float32, args["latent_n"]), ones(Float32, args["latent_n"]))
+normal = Distributions.Normal(0, 1)
 # multivariate_normal to GPU if available
 # if args["model_cuda"] >= 0
 #     multivariate_normal = multivariate_normal |> gpu
@@ -58,7 +59,7 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
                 # Dropout(0.5),
                 # Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
-                Dense(channel_n * 2 => latent_n, relu), # log_var
+                Dense(channel_n * 2 => latent_n, relu), # sigma: log_var
             )
         ),
     )
@@ -68,10 +69,10 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         Dense(dim_1 * dim_2 => channel_n * 16, relu),
         Split(
             Chain(
-                Dense(channel_n * 16 => latent_n, relu),
+                Dense(channel_n * 16 => latent_n, relu),  # mu
             ),
             Chain(
-                Dense(channel_n * 16 => latent_n, relu),
+                Dense(channel_n * 16 => latent_n, relu),  # sigma
             ),
         )
     )
@@ -85,7 +86,8 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     # returns a function that returns the sampling function
     sampling = (mu, log_var) -> begin
-        eps = rand(multivariate_normal, size(mu)[end])
+        # eps = rand(multivariate_normal, size(mu)[2:end])
+        eps = rand(normal, size(mu))
         if args["model_cuda"] >= 0
             eps = eps |> gpu
         end
