@@ -35,22 +35,21 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
                 Conv((1, 1), channel_n => div(channel_n, 4), relu),
                 Flux.flatten,
                 # Dropout(0.5),
-                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, elu),
+                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, relu),
                 # Dropout(0.5),
                 # Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
-                Dense(channel_n * 2 => latent_n, tanh), # mu : mean
+                Dense(channel_n * 2 => latent_n, relu), # mu : mean
             ),
             Chain(
                 Conv((1, 1), channel_n => div(channel_n, 4), relu),
                 Flux.flatten,
                 # Dropout(0.5),
-                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, elu),
+                Dense(div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4) => channel_n * 2, relu),
                 # Dropout(0.5),
                 # Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 2, elu),
                 # Dropout(0.5),
-                Dense(channel_n * 2 => latent_n, elu), # log_var
-                # softmax
+                Dense(channel_n * 2 => latent_n, relu), # log_var
             )
         ),
     )
@@ -81,9 +80,9 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     # returns a function that returns the decoder
     decoder = Chain(
-        Dense(latent_n => channel_n * 2, elu),
+        Dense(latent_n => channel_n * 2, relu),
         # Dropout(0.5),
-        Dense(channel_n * 2 => div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4), elu),
+        Dense(channel_n * 2 => div(dim_1, 1) * div(dim_2, 1) * div(channel_n, 4), relu),
         # Dropout(0.5),
         x -> reshape(x, (div(dim_1, 1), div(dim_2, 1), div(channel_n, 4), :)),
         ConvTranspose((1, 1), div(channel_n, 4) => channel_n, relu),
