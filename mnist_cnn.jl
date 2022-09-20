@@ -114,12 +114,14 @@ function train()
             y_ = y_train_s[:, i:i+BATCH_SIZE-1]
             # @info "sizes" size(x_) size(y_)
             if args["model_cuda"] >= 0
-                x = Array{Float32,4}(undef, size(x_))
-                x[:, :, :, 1:BATCH_SIZE] = x_
-                x_ = x |> gpu
-                y = Array{Float32,2}(undef, size(y_))
-                y[:, 1:BATCH_SIZE] = y_
-                y_ = y |> gpu
+                # x = Array{Float32,4}(undef, size(x_))
+                # x[:, :, :, 1:BATCH_SIZE] = x_
+                # x_ = x |> gpu
+                x_ = x_ |> gpu
+                # y = Array{Float32,2}(undef, size(y_))
+                # y[:, 1:BATCH_SIZE] = y_
+                # y_ = y |> gpu
+                y_ = y_ |> gpu
             end
             grads = gradient(() -> lossF(model_, x_, y_), params)
             Flux.update!(opt, params, grads)
