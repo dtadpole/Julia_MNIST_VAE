@@ -30,19 +30,19 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
         Conv((3, 3), 1 => channel_n, relu, pad=(1, 1)),
         MaxPool((2, 2)),
         Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        MaxPool((2, 2)),
-        Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        # MaxPool((2, 2)),
+        # Conv((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Flux.flatten,
         Split(
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 4, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 4 => latent_n, tanh), # mu : mean
             ),
             Chain(
                 # Dropout(0.5),
-                Dense(div(dim_1, 4) * div(dim_2, 4) * channel_n => channel_n * 4, elu),
+                Dense(div(dim_1, 2) * div(dim_2, 2) * channel_n => channel_n * 4, elu),
                 # Dropout(0.5),
                 Dense(channel_n * 4 => latent_n, elu), # log_var
                 # softmax
@@ -78,11 +78,11 @@ modelF = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
     decoder = Chain(
         Dense(latent_n => channel_n * 4, elu),
         # Dropout(0.5),
-        Dense(channel_n * 4 => div(dim_1, 4) * div(dim_2, 4) * channel_n, elu),
-        x -> reshape(x, (div(dim_1, 4), div(dim_2, 4), channel_n, :)),
+        Dense(channel_n * 4 => div(dim_1, 2) * div(dim_2, 2) * channel_n, elu),
+        x -> reshape(x, (div(dim_1, 2), div(dim_2, 2), channel_n, :)),
         # Dropout(0.5),
-        ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
-        Upsample((2, 2)),
+        # ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
+        # Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => channel_n, relu, pad=(1, 1)),
         Upsample((2, 2)),
         ConvTranspose((3, 3), channel_n => 1, relu, pad=(1, 1)),
@@ -115,7 +115,7 @@ lossF = (model_, x_) -> begin
     loss_reconstruction = sum((x_ - x_pred) .^ 2, dims=1:2) # / (size(x_, 1) * size(x_, 2))
     # loss_kl = sum(log.(log_var / 1.0) + (1.0^2 + (mu - 0.0)^2) / (2 * log_var^2) - 0.5, dims=1)
     loss_kl = -0.5f0 * sum(1.0f0 .+ log_var .- mu .^ 2 .- exp.(log_var), dims=1)
-    loss = mean(loss_reconstruction .+ loss_kl), mean(loss_reconstruction), mean(loss_kl)
+    return mean(loss_reconstruction .+ loss_kl), mean(loss_reconstruction), mean(loss_kl)
 end
 
 lossF_sample = (model_, x_, size_::Int=2_000) -> begin
