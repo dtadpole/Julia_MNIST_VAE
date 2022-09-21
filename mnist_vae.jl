@@ -140,7 +140,7 @@ lossF = (encoder, decoder, x_) -> begin
     if args["model_cuda"] >= 0
         eps = eps |> gpu
     end
-    sigma = exp.(log_var .* 0.5)
+    sigma = exp.(log_var .* 0.5f0)
     z_ = mu .+ sigma .* eps
     x_pred = decoder(z_)
 
