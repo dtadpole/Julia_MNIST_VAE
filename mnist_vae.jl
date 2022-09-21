@@ -267,7 +267,7 @@ function save_model()
     model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
     @info "Saving model to $(model_filename)"
     open(model_filename, "w") do io
-        serialize(io, (model_type, model_latent_n, model_channel_n, encoder_, decoder_))
+        serialize(io, (model_type, model_latent_n, model_channel_n, encoder_ |> cpu, decoder_ |> cpu))
     end
 end
 
