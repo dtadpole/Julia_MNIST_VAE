@@ -153,7 +153,7 @@ lossF = (encoder, decoder, x_) -> begin
     return loss # , loss_reconstruction, loss_kl, mean(mu, dims=2), mean(log_var, dims=2)
 end
 
-lossF_sample = (encoder, decoder, x_, size_::Int=2_000) -> begin
+lossF_sample = (encoder, decoder, x_, size_::Int=5_000) -> begin
     len = size(x_)[end]
     if size_ > 0 && size_ <= len
         s = sample(1:len, size_, replace=false)
