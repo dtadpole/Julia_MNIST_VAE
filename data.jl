@@ -30,15 +30,6 @@ y_test_ = convert(Array{Float32}, onehotbatch(y_test_, 0:9))
 TEST_LENGTH = size(y_test_, 2)
 
 ##################################################
-function get_train_loader(batch_size; shuffle::Bool=true)
-    # The FashionMNIST training set is made up of 60k 28 by 28 greyscale images
-    train_x, train_y = MNIST.traindata(Float32)
-    train_x = reshape(train_x, (28, 28, 1, :))
-    train_x = parent(padarray(train_x, Fill(0, (2, 2, 0, 0))))
-    return DataLoader((train_x, train_y), batchsize=batch_size, shuffle=shuffle, partial=false)
-end
-
-##################################################
 # custom split layer
 struct Split{T}
     paths::T

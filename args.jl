@@ -49,6 +49,11 @@ function parse_commandline()
         arg_type = Float32
         default = 0.00001f0
 
+        "--plot_image_n"
+        help = "plot image number"
+        arg_type = Int
+        default = 5
+
     end
 
     return parse_args(s)
