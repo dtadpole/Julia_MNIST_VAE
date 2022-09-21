@@ -35,8 +35,8 @@ function plot_latent_images(decoder, n, size_=32)
     end
 
     canvas = transpose(canvas)
-    result = imshow(canvas)
-    @info "imshow" result
+    # result = imshow(canvas)
+    # @info "imshow" result
 
     return canvas
 end
