@@ -34,17 +34,26 @@ function plot_latent_images(decoder, n, size_=32)
         canvas[(i-1)*size_+1:i*size_, (j-1)*size_+1:j*size_] = x_decoded
     end
 
-    result = imshow(transpose(canvas))
+    canvas = transpose(canvas)
+    result = imshow(canvas)
     @info "imshow" result
 
+    return canvas
 end
 
 ##################################################
 # Main
 if abspath(PROGRAM_FILE) == @__FILE__
+
+    model_type = args["model_type"]
+    model_latent_n = args["model_latent_n"]
+    model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
+
     encoder, decoder = load_model()
     for i in 1:args["plot_image_n"]
-        plot_latent_images(decoder, 15)
+        img = plot_latent_images(decoder, 15)
+        img_filename = "images/plot_$(model_latent_n)_$(model_type)_$(model_channel_n)__$(i).png"
+        save(img_filename, colorview(Gray, img))
     end
     readline()
 end
