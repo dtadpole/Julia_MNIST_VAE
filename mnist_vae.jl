@@ -197,13 +197,13 @@ function train()
                 if args["model_cuda"] >= 0
                     x_ = x_ |> gpu
                 end
-                #(loss_curr, loss_recon, loss_kl, mu, log_var)
+                # loss_tuple : (loss_curr, loss_recon, loss_kl, mu, sigma)
                 loss_tuple, back = pullback(params) do
                     lossF(encoder_, decoder_, x_)
                 end
                 gradients = back((1.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0))
                 Flux.update!(opt, params, gradients)
-                loss_curr, loss_recon, loss_kl, mu, log_var = loss_tuple
+                loss_curr, loss_recon, loss_kl, mu, sigma = loss_tuple
                 # update progress tracker
                 loss_total += loss_curr
                 loss_avg = loss_total / (progress_tracker.counter + 1)
@@ -213,7 +213,7 @@ function train()
                     (:recon, round(loss_recon, digits=2)),
                     (:kl, round(loss_kl, digits=2)),
                     (:mu, round.(mu, digits=2)),
-                    (:log_var, round.(log_var, digits=2)),
+                    (:sigma, round.(sigma, digits=2)),
                 ])
             end)()
             # reclaim GPU memory
