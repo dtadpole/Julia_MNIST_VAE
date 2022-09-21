@@ -242,7 +242,7 @@ function train()
         start_time = time()
         loss_test = round(lossF_sample(encoder_, decoder_, x_test_), digits=2)
         test_time = round(time() - start_time, digits=1)
-        @info "Epoch [$(epoch)] : test loss [$(loss_test)] [$(test_time)]"
+        @info "Epoch [$(epoch)] : test loss [$(loss_test)] [$(test_time)s]"
         # GC and reclaim GPU memory
         GC.gc(true)
         if args["model_cuda"] >= 0
