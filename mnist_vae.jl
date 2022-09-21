@@ -7,9 +7,11 @@ using Random
 using StatsBase
 using Distributions
 using ProgressMeter: Progress, next!
+using Serialization
+using JLD
 
 # multivariate normal distribution
-multivariate_normal = Distributions.MvNormal(zeros(Float32, args["latent_n"]), ones(Float32, args["latent_n"]))
+multivariate_normal = Distributions.MvNormal(zeros(Float32, args["model_latent_n"]), ones(Float32, args["model_latent_n"]))
 normal = Distributions.Normal(0.0f0, 1.0f0)
 
 
@@ -123,7 +125,7 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
 end
 
-encoder_, decoder_ = create_vae(size(x_train_)[1], size(x_train_)[2], args["model_channel_n"], args["latent_n"])
+encoder_, decoder_ = create_vae(size(x_train_)[1], size(x_train_)[2], args["model_channel_n"], args["model_latent_n"])
 
 # return a function that returns loss function
 lossF = (encoder, decoder, x_) -> begin
@@ -252,12 +254,25 @@ function train()
     end
 end
 
+##################################################
+# save
+function save_model()
+    model_type = args["model_conv"] ? "conv" : "dense"
+    model_latent_n = args["latent_n"]
+    model_channel_n = args["model_conv"] ? args["model_channel_n"] : args["model_channel_n"] * 8
+    model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
+    @info "Saving model to $(model_filename)"
+    open(model_filename, "w") do io
+        write(io, model_latent_n)
+        write(io, model_channel_n)
+        write(io, encoder_)
+        write(io, decoder_)
+    end
+end
 
 ##################################################
 # Main
 if abspath(PROGRAM_FILE) == @__FILE__
     train()
-    # if args["model_cuda"] >= 0
-    #     CUDA.reclaim()
-    # end
+    save_model()
 end

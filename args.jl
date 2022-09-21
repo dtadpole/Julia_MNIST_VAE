@@ -23,7 +23,7 @@ function parse_commandline()
         arg_type = Int
         default = 32
 
-        "--latent_n"
+        "--model_latent_n"
         help = "latent variable number"
         arg_type = Int
         default = 3

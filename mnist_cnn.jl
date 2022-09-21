@@ -14,11 +14,11 @@ BATCH_SIZE = args["train_batch_size"]
 modelF = (dim_1::Int, dim_2::Int, channel_n::Int) -> begin
     model = Chain(
         Conv((4, 4), 1 => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        Conv((4, 4), channel_n => channel_n * 2, relu, pad=(1, 1), stride=(2, 2)),
-        Conv((4, 4), channel_n * 2 => channel_n * 4, relu, pad=(1, 1), stride=(2, 2)),
+        Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+        Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
         Flux.flatten,
         Dropout(0.5),
-        Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n * 4 => channel_n * 4, relu),
+        Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n => channel_n * 4, relu),
         Dropout(0.5),
         Dense(channel_n * 4 => 10),
         softmax
