@@ -6,3 +6,4 @@ OneHotArrays
 ProgressMeter
 Random
 StatsBase
+Zygote

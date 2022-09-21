@@ -208,7 +208,7 @@ function train()
                 ])
             end)()
             # reclaim GPU memory
-            if mod(progress_tracker.counter, 20) == 0
+            if mod(progress_tracker.counter, 100) == 0
                 GC.gc(true)
                 if args["model_cuda"] >= 0
                     CUDA.reclaim()
