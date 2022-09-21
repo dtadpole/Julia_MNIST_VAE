@@ -27,7 +27,7 @@ function parse_commandline()
         "--model_latent_n"
         help = "latent variable number"
         arg_type = Int
-        default = 3
+        default = 2
 
         "--train_batch_size"
         help = "batch size"
@@ -48,6 +48,11 @@ function parse_commandline()
         help = "weight decay"
         arg_type = Float32
         default = 0.00001f0
+
+        "--plot_image_n"
+        help = "plot image number"
+        arg_type = Int
+        default = 5
 
     end
 
