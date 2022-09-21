@@ -1,9 +1,11 @@
 include("./data.jl")
 
 using Flux
+using Zygote
 using CUDA
 using Random
 using StatsBase
+using ProgressMeter: Progress, next!
 
 
 ##################################################
@@ -59,7 +61,7 @@ accuracyF = (model_, x_, y_; test_mode=false, size_=nothing) -> begin
 end
 
 # get model
-model_ = modelF(28, 28, args["model_channel_n"])
+model_ = modelF(size(x_train_)[1], size(x_train_)[2], args["model_channel_n"])
 @info "Model" model_
 
 ##################################################
@@ -78,32 +80,39 @@ function train()
 
     BATCH_SIZE = args["train_batch_size"]
 
-    function train_epoch()
-        # shuffle training data
-        s = shuffle(1:TRAIN_LENGTH) # s = 1:len_train
-        x_train_s = x_train_[:, :, :, s]
-        y_train_s = y_train_[:, s]
-        # train batch
-        for i in 1:BATCH_SIZE:TRAIN_LENGTH
+    data_loader = Flux.Data.DataLoader((x_train_, y_train_), batchsize=BATCH_SIZE, shuffle=true)
+
+    function train_epoch(epoch)
+        # total loss
+        loss_total = 0.0f0
+        # progress tracker
+        progress_tracker = Progress(length(data_loader), 1, "Training epoch $(epoch): ")
+        for (x_, y_) in data_loader
             (() -> begin
-                x_ = x_train_s[:, :, :, i:i+BATCH_SIZE-1]
-                y_ = y_train_s[:, i:i+BATCH_SIZE-1]
-                # @info "sizes" size(x_) size(y_)
                 if args["model_cuda"] >= 0
-                    x = Array{Float32,4}(undef, size(x_))
-                    x[:, :, :, 1:BATCH_SIZE] = x_
-                    x_ = x |> gpu
-                    # x_ = x_ |> gpu
-                    y = Array{Float32,2}(undef, size(y_))
-                    y[:, 1:BATCH_SIZE] = y_
-                    y_ = y |> gpu
-                    # y_ = y_ |> gpu
+                    x_ = x_ |> gpu
+                    y_ = y_ |> gpu
                 end
-                grads = gradient(() -> lossF(model_, x_, y_), params)
-                Flux.update!(opt, params, grads)
+                #(loss_curr, loss_recon, loss_kl, mu, log_var)
+                loss_curr, back = pullback(params) do
+                    lossF(model_, x_, y_)
+                end
+                gradients = back(1.0f0)
+                Flux.update!(opt, params, gradients)
+                # update progress tracker
+                loss_total += loss_curr
+                loss_avg = loss_total / (progress_tracker.counter + 1)
+                next!(progress_tracker; showvalues=[
+                    (:loss, round(loss_avg, digits=2)),
+                    (:curr, round(loss_curr, digits=2)),
+                    # (:recon, round(loss_recon, digits=2)),
+                    # (:kl, round(loss_kl, digits=2)),
+                    # (:mu, round.(mu, digits=2)),
+                    # (:log_var, round.(log_var, digits=2)),
+                ])
             end)()
             # reclaim GPU memory
-            if mod(i, BATCH_SIZE * 100) == 1
+            if mod(progress_tracker.counter, 100) == 0
                 GC.gc(true)
                 if args["model_cuda"] >= 0
                     CUDA.reclaim()
@@ -127,7 +136,7 @@ function train()
         # start time
         start_time = time()
         # train epoch
-        train_epoch()
+        train_epoch(epoch)
         train_time = round(time() - start_time, digits=1)
         # GC and reclaim GPU memory
         GC.gc(true)

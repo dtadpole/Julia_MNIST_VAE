@@ -129,7 +129,8 @@ encoder_, decoder_ = create_vae(size(x_train_)[1], size(x_train_)[2], args["mode
 lossF = (encoder, decoder, x_) -> begin
 
     mu, log_var = encoder(x_)
-    eps = randn(Float32, size(log_var))
+    # eps = randn(Float32, size(log_var))
+    eps = rand(multivariate_normal, size(mu)[end])
     if args["model_cuda"] >= 0
         eps = eps |> gpu
     end
