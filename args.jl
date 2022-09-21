@@ -26,7 +26,7 @@ function parse_commandline()
         "--latent_n"
         help = "latent variable number"
         arg_type = Int
-        default = 5
+        default = 3
 
         "--train_batch_size"
         help = "batch size"
