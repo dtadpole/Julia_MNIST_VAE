@@ -54,6 +54,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         img = plot_latent_images(decoder, 15)
         img_filename = "images/plot_$(model_latent_n)_$(model_type)_$(model_channel_n)__$(i).png"
         save(img_filename, colorview(Gray, img))
+        @info "Image saved to $(img_filename)"
     end
-    readline()
+    # readline()
 end

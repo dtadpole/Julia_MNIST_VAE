@@ -29,6 +29,12 @@ function parse_commandline()
         arg_type = Int
         default = 2
 
+        "--train_loss_type"
+        help = "loss type : mse or logistic"
+        arg_type = String
+        range_tester = x -> x in ["mse", "logistic"]
+        default = "mse"
+
         "--train_batch_size"
         help = "batch size"
         arg_type = Int
