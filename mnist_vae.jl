@@ -140,7 +140,8 @@ lossF = (encoder, decoder, x_) -> begin
     if args["model_cuda"] >= 0
         eps = eps |> gpu
     end
-    z_ = mu .+ exp.(log_var .* 0.5f0) .* eps
+    sigma = exp.(log_var .* 0.5)
+    z_ = mu .+ sigma .* eps
     x_pred = decoder(z_)
 
     # x_pred, mu, log_var = model(x_)
@@ -150,7 +151,7 @@ lossF = (encoder, decoder, x_) -> begin
     loss_kl = mean(-0.5f0 * sum(1.0f0 .+ log_var .- mu .^ 2 .- exp.(log_var), dims=1))
     # loss_kl = 0
     loss = loss_reconstruction + loss_kl
-    return loss # , loss_reconstruction, loss_kl, mean(mu, dims=2), mean(log_var, dims=2)
+    return loss, loss_reconstruction, loss_kl, mean(mu, dims=2), mean(sigma, dims=2)
 end
 
 lossF_sample = (encoder, decoder, x_, size_::Int=5_000) -> begin
@@ -165,7 +166,7 @@ lossF_sample = (encoder, decoder, x_, size_::Int=5_000) -> begin
         x_ = x |> gpu
         # x_ = x_ |> gpu
     end
-    lossF(encoder, decoder, x_)
+    lossF(encoder, decoder, x_)[1]
 end
 
 ##################################################
@@ -197,21 +198,22 @@ function train()
                     x_ = x_ |> gpu
                 end
                 #(loss_curr, loss_recon, loss_kl, mu, log_var)
-                loss_curr, back = pullback(params) do
+                loss_tuple, back = pullback(params) do
                     lossF(encoder_, decoder_, x_)
                 end
-                gradients = back(1.0f0)
+                gradients = back((1.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0))
                 Flux.update!(opt, params, gradients)
+                loss_curr, loss_recon, loss_kl, mu, log_var = loss_tuple
                 # update progress tracker
                 loss_total += loss_curr
                 loss_avg = loss_total / (progress_tracker.counter + 1)
                 next!(progress_tracker; showvalues=[
                     (:loss, round(loss_avg, digits=2)),
                     (:curr, round(loss_curr, digits=2)),
-                    # (:recon, round(loss_recon, digits=2)),
-                    # (:kl, round(loss_kl, digits=2)),
-                    # (:mu, round.(mu, digits=2)),
-                    # (:log_var, round.(log_var, digits=2)),
+                    (:recon, round(loss_recon, digits=2)),
+                    (:kl, round(loss_kl, digits=2)),
+                    (:mu, round.(mu, digits=2)),
+                    (:log_var, round.(log_var, digits=2)),
                 ])
             end)()
             # reclaim GPU memory
