@@ -265,10 +265,13 @@ function save_model()
     model_latent_n = args["model_latent_n"]
     model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
     model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
-    @info "Saving model to $(model_filename)"
+    encoder_cpu = Flux.params(encoder_ |> cpu)
+    decoder_cpu = Flux.params(decoder_ |> cpu)
+    @info "Saving model to [$(model_filename)]"
     open(model_filename, "w") do io
-        serialize(io, (model_type, model_latent_n, model_channel_n, encoder_ |> cpu, decoder_ |> cpu))
+        serialize(io, (model_type, model_latent_n, model_channel_n, encoder_cpu, decoder_cpu))
     end
+    return nothing
 end
 
 ##################################################
@@ -279,14 +282,19 @@ function load_model()
     model_latent_n = args["model_latent_n"]
     model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
     model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
-    @info "Loading model to $(model_filename)"
+    @info "Loading model from [$(model_filename)]"
     open(model_filename, "r") do io
-        model_type_, model_latent_n_, model_channel_n_, encoder_s, decoder_s = deserialize(io)
+        model_type_, model_latent_n_, model_channel_n_, encoder_cpu, decoder_cpu = deserialize(io)
+        if model_type_ != model_type || model_latent_n_ != model_latent_n || model_channel_n_ != model_channel_n
+            error("Model type, latent_n or channel_n mismatch")
+        else
+            Flux.loadmodel!(encoder_, encoder_cpu)
+            Flux.loadmodel!(decoder_, decoder_cpu)
+        end
     end
-    if model_type_ != model_type || model_latent_n_ != model_latent_n || model_channel_n_ != model_channel_n
-        error("Model type, latent_n or channel_n mismatch")
-    else
-        encoder_, decoder_ = encoder_s, decoder_s
+    if args["model_cuda"] >= 0
+        encoder_ = encoder_ |> gpu
+        decoder_ = decoder_ |> gpu
     end
     return encoder_, decoder_
 end

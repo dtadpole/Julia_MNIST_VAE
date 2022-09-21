@@ -1,6 +1,8 @@
 CUDA
 Flux
 ImageFiltering
+ImageView
+Images
 MLDatasets
 OneHotArrays
 ProgressMeter

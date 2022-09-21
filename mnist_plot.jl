@@ -1,27 +1,34 @@
 include("./mnist_vae.jl")
 
-function plot_latent_images(encoder, decoder, n, digit_size=32)
+using ImageView
+using Images
+
+function plot_latent_images(decoder, n, size_=32)
     # display a n*n 2D manifold of digits
-    figure(figsize=(10, 10))
-    grid("off")
-    subplots_adjust(left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
 
-    # linearly spaced coordinates corresponding to the 2D plot
-    # of digit classes in the latent space
-    linspace_x = range(-4, 4, length=n)
-    linspace_y = range(-4, 4, length=n)
+    normal = Normal()
+    grid_x = quantile(normal, range(0.05f0, stop=0.95f0, length=n))
+    grid_y = quantile(normal, range(0.05f0, stop=0.95f0, length=n))
+    image_width = size_ * n
+    image_height = size_ * n
+    canvas = zeros(Float32, image_width, image_height)
 
-    # use the model to generate the digits
     for i in 1:n, j in 1:n
-        z_sample = [linspace_x[i], linspace_y[j]]
+        z_sample = [grid_x[i], grid_y[j]]
         x_decoded = decoder(z_sample)
-        digit = x_decoded[:, :, 1]
-        imshow(digit, cmap="gray")
-        axis("off")
+        x_decoded = reshape(x_decoded, size_, size_)
+        canvas[(i-1)*size_+1:i*size_, (j-1)*size_+1:j*size_] = x_decoded
     end
+
+    result = imshow(canvas)
+    @info "imshow" result
+    readline()
+
 end
 
 ##################################################
 # Main
 if abspath(PROGRAM_FILE) == @__FILE__
+    encoder, decoder = load_model()
+    plot_latent_images(decoder, 15)
 end
