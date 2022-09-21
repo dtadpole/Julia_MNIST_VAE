@@ -26,7 +26,7 @@ function plot_latent_images(decoder, n, size_=32)
             elseif s[k] == 2
                 z_sample[k] = grid_y[j]
             else
-                z_sample[k] = randn()
+                z_sample[k] = randn() * 0.5f0
             end
         end
         x_decoded = decoder(z_sample)
