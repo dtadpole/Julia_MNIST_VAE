@@ -267,8 +267,8 @@ function save_model()
     model_latent_n = args["model_latent_n"]
     model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
     model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
-    encoder_cpu = Flux.params(encoder_ |> cpu)
-    decoder_cpu = Flux.params(decoder_ |> cpu)
+    encoder_cpu = encoder_ |> cpu
+    decoder_cpu = decoder_ |> cpu
     @info "Saving model to [$(model_filename)]"
     open(model_filename, "w") do io
         serialize(io, (model_type, model_latent_n, model_channel_n, encoder_cpu, decoder_cpu))
