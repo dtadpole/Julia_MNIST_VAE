@@ -19,7 +19,7 @@ normal = Distributions.Normal(0.0f0, 1.0f0)
 # returns a function that returns the model
 create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
-    if args["model_conv"]
+    if args["model_type"] == "conv"
         encoder = Chain(
             Conv((4, 4), 1 => channel_n, relu, pad=(1, 1), stride=(2, 2)),
             # MaxPool((2, 2)),
@@ -49,7 +49,7 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
                 )
             ),
         )
-    else
+    elseif args["model_type"] == "dense"
         encoder = Chain(
             Flux.flatten,
             # Dropout(0.5),
@@ -71,6 +71,8 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
                 ),
             )
         )
+    else
+        error("model_type must be either conv or dense")
     end
 
     # encoder to GPU if available
@@ -80,7 +82,7 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     @info "Encoder" encoder
 
-    if args["model_conv"]
+    if args["model_type"] == "conv"
         decoder = Chain(
             Dense(latent_n => channel_n * 8, elu),
             # Dropout(0.5),
@@ -99,7 +101,7 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
             # Reshape(dim_1, dim_2, 1, :),
             # sigmoid
         )
-    else
+    elseif args["model_type"] == "dense"
         decoder = Chain(
             Dense(latent_n => channel_n * 8, relu),
             # Dropout(0.5),
@@ -111,6 +113,8 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
             Reshape(dim_1, dim_2, 1, :),
             # sigmoid
         )
+    else
+        error("model_type must be either conv or dense")
     end
 
     # decoder to GPU if available
@@ -257,17 +261,34 @@ end
 ##################################################
 # save
 function save_model()
-    model_type = args["model_conv"] ? "conv" : "dense"
-    model_latent_n = args["latent_n"]
-    model_channel_n = args["model_conv"] ? args["model_channel_n"] : args["model_channel_n"] * 8
+    model_type = args["model_type"]
+    model_latent_n = args["model_latent_n"]
+    model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
     model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
     @info "Saving model to $(model_filename)"
     open(model_filename, "w") do io
-        write(io, model_latent_n)
-        write(io, model_channel_n)
-        write(io, encoder_)
-        write(io, decoder_)
+        serialize(io, (model_type, model_latent_n, model_channel_n, encoder_, decoder_))
     end
+end
+
+##################################################
+# load
+function load_model()
+    global encoder_, decoder_
+    model_type = args["model_type"]
+    model_latent_n = args["model_latent_n"]
+    model_channel_n = model_type == "dense" ? args["model_channel_n"] * 8 : args["model_channel_n"]
+    model_filename = "trained/vae_$(model_latent_n)_$(model_type)_$(model_channel_n).model"
+    @info "Loading model to $(model_filename)"
+    open(model_filename, "r") do io
+        model_type_, model_latent_n_, model_channel_n_, encoder_s, decoder_s = deserialize(io)
+    end
+    if model_type_ != model_type || model_latent_n_ != model_latent_n || model_channel_n_ != model_channel_n
+        error("Model type, latent_n or channel_n mismatch")
+    else
+        encoder_, decoder_ = encoder_s, decoder_s
+    end
+    return encoder_, decoder_
 end
 
 ##################################################

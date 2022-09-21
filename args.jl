@@ -13,10 +13,11 @@ function parse_commandline()
         arg_type = Int
         default = -1
 
-        "--model_conv"
-        help = "model using convolutional layers"
-        arg_type = Bool
-        default = false
+        "--model_type"
+        help = "model type : conv or dense"
+        arg_type = String
+        range_tester = x -> x in ["conv", "dense"]
+        default = "dense"
 
         "--model_channel_n"
         help = "model channel number"
