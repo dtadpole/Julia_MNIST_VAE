@@ -151,7 +151,7 @@ lossF = (encoder, decoder, x_) -> begin
     loss_kl = mean(-0.5f0 * sum(1.0f0 .+ log_var .- mu .^ 2 .- exp.(log_var), dims=1))
     # loss_kl = 0
     loss = loss_reconstruction + loss_kl
-    return loss, loss_reconstruction, loss_kl, mean(mu, dims=2), mean(sigma, dims=2)
+    return loss, loss_reconstruction, loss_kl, mean(mu, dims=2) |> cpu, mean(sigma, dims=2) |> cpu
 end
 
 lossF_sample = (encoder, decoder, x_, size_::Int=5_000) -> begin
