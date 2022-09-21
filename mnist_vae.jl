@@ -50,21 +50,21 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     encoder = Chain(
         Flux.flatten,
-        Dropout(0.5),
+        # Dropout(0.5),
         Dense(dim_1 * dim_2 => channel_n * 8, relu),
-        Dropout(0.5),
+        # Dropout(0.5),
         Dense(channel_n * 8 => channel_n * 8, relu),
         Split(
             Chain(
                 # Dropout(0.5),
                 # Dense(channel_n * 8 => channel_n * 8, relu),
-                Dropout(0.5),
+                # Dropout(0.5),
                 Dense(channel_n * 8 => latent_n),  # mu : mean -- IMPORTANT : no activation function !!!
             ),
             Chain(
                 # Dropout(0.5),
                 # Dense(channel_n * 8 => channel_n * 8, relu),
-                Dropout(0.5),
+                # Dropout(0.5),
                 Dense(channel_n * 8 => latent_n),  # sigma : log_var -- IMPORTANT : no activation function !!!
             ),
         )
@@ -99,10 +99,10 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     decoder = Chain(
         Dense(latent_n => channel_n * 8, relu),
-        Dropout(0.5),
+        # Dropout(0.5),
         Dense(channel_n * 8 => channel_n * 8, relu),
         # Dense(channel_n * 8 => channel_n * 8, relu),
-        Dropout(0.5),
+        # Dropout(0.5),
         Dense(channel_n * 8 => dim_1 * dim_2, sigmoid),
         Reshape(dim_1, dim_2, 1, :),
         # sigmoid
