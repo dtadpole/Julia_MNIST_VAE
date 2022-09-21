@@ -13,6 +13,11 @@ function parse_commandline()
         arg_type = Int
         default = -1
 
+        "--model_conv"
+        help = "model using convolutional layers"
+        arg_type = Bool
+        default = false
+
         "--model_channel_n"
         help = "model channel number"
         arg_type = Int

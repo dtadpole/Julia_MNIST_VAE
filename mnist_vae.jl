@@ -17,58 +17,59 @@ normal = Distributions.Normal(0.0f0, 1.0f0)
 # returns a function that returns the model
 create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
-    # returns a function that returns the encoder
-    encoder = Chain(
-        Conv((4, 4), 1 => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        # MaxPool((2, 2)),
-        Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        # MaxPool((2, 2)),
-        Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        Split(
-            Chain(
-                # Conv((1, 1), channel_n => div(channel_n, 4), relu),
-                Flux.flatten,
-                # Dropout(0.5),
-                Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => latent_n), # mu : mean -- IMPORTANT : no activation function !!!
-            ),
-            Chain(
-                # Conv((1, 1), channel_n => div(channel_n, 4), relu),
-                Flux.flatten,
-                # Dropout(0.5),
-                Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => latent_n), # sigma: log_var -- IMPORTANT : no activation function !!!
-            )
-        ),
-    )
-
-    encoder = Chain(
-        Flux.flatten,
-        # Dropout(0.5),
-        Dense(dim_1 * dim_2 => channel_n * 8, relu),
-        # Dropout(0.5),
-        Dense(channel_n * 8 => channel_n * 8, relu),
-        Split(
-            Chain(
-                # Dropout(0.5),
-                # Dense(channel_n * 8 => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => latent_n),  # mu : mean -- IMPORTANT : no activation function !!!
-            ),
-            Chain(
-                # Dropout(0.5),
-                # Dense(channel_n * 8 => channel_n * 8, relu),
-                # Dropout(0.5),
-                Dense(channel_n * 8 => latent_n),  # sigma : log_var -- IMPORTANT : no activation function !!!
+    if args["model_conv"]
+        encoder = Chain(
+            Conv((4, 4), 1 => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+            # MaxPool((2, 2)),
+            Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+            # MaxPool((2, 2)),
+            Conv((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+            Split(
+                Chain(
+                    # Conv((1, 1), channel_n => div(channel_n, 4), relu),
+                    Flux.flatten,
+                    # Dropout(0.5),
+                    Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => latent_n), # mu : mean -- IMPORTANT : no activation function !!!
+                ),
+                Chain(
+                    # Conv((1, 1), channel_n => div(channel_n, 4), relu),
+                    Flux.flatten,
+                    # Dropout(0.5),
+                    Dense(div(dim_1, 8) * div(dim_2, 8) * channel_n => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => latent_n), # sigma: log_var -- IMPORTANT : no activation function !!!
+                )
             ),
         )
-    )
+    else
+        encoder = Chain(
+            Flux.flatten,
+            # Dropout(0.5),
+            Dense(dim_1 * dim_2 => channel_n * 8, relu),
+            # Dropout(0.5),
+            Dense(channel_n * 8 => channel_n * 8, relu),
+            Split(
+                Chain(
+                    # Dropout(0.5),
+                    # Dense(channel_n * 8 => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => latent_n),  # mu : mean -- IMPORTANT : no activation function !!!
+                ),
+                Chain(
+                    # Dropout(0.5),
+                    # Dense(channel_n * 8 => channel_n * 8, relu),
+                    # Dropout(0.5),
+                    Dense(channel_n * 8 => latent_n),  # sigma : log_var -- IMPORTANT : no activation function !!!
+                ),
+            )
+        )
+    end
 
     # encoder to GPU if available
     if args["model_cuda"] >= 0
@@ -77,36 +78,37 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
     @info "Encoder" encoder
 
-    # returns a function that returns the decoder
-    decoder = Chain(
-        Dense(latent_n => channel_n * 8, elu),
-        # Dropout(0.5),
-        Dense(channel_n * 8 => channel_n * 8, elu),
-        # Dropout(0.5),
-        Dense(channel_n * 8 => div(dim_1, 8) * div(dim_2, 8) * channel_n, elu),
-        # Dropout(0.5),
-        # x -> reshape(x, (div(dim_1, 8), div(dim_2, 8), channel_n, :)),
-        Reshape(div(dim_1, 8), div(dim_2, 8), channel_n, :),
-        # ConvTranspose((1, 1), div(channel_n, 4) => channel_n, relu),
-        ConvTranspose((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        # Upsample((2, 2)),
-        ConvTranspose((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
-        # Upsample((2, 2)),
-        ConvTranspose((4, 4), channel_n => 1, pad=(1, 1), sigmoid, stride=(2, 2)),
-        # x -> reshape(x, (dim_1, dim_2, 1, :)),
-        # sigmoid
-    )
-
-    decoder = Chain(
-        Dense(latent_n => channel_n * 8, relu),
-        # Dropout(0.5),
-        Dense(channel_n * 8 => channel_n * 8, relu),
-        # Dense(channel_n * 8 => channel_n * 8, relu),
-        # Dropout(0.5),
-        Dense(channel_n * 8 => dim_1 * dim_2, sigmoid),
-        Reshape(dim_1, dim_2, 1, :),
-        # sigmoid
-    )
+    if args["model_conv"]
+        decoder = Chain(
+            Dense(latent_n => channel_n * 8, elu),
+            # Dropout(0.5),
+            Dense(channel_n * 8 => channel_n * 8, elu),
+            # Dropout(0.5),
+            Dense(channel_n * 8 => div(dim_1, 8) * div(dim_2, 8) * channel_n, elu),
+            # Dropout(0.5),
+            # x -> reshape(x, (div(dim_1, 8), div(dim_2, 8), channel_n, :)),
+            Reshape(div(dim_1, 8), div(dim_2, 8), channel_n, :),
+            # ConvTranspose((1, 1), div(channel_n, 4) => channel_n, relu),
+            ConvTranspose((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+            # Upsample((2, 2)),
+            ConvTranspose((4, 4), channel_n => channel_n, relu, pad=(1, 1), stride=(2, 2)),
+            # Upsample((2, 2)),
+            ConvTranspose((4, 4), channel_n => 1, pad=(1, 1), sigmoid, stride=(2, 2)),
+            # Reshape(dim_1, dim_2, 1, :),
+            # sigmoid
+        )
+    else
+        decoder = Chain(
+            Dense(latent_n => channel_n * 8, relu),
+            # Dropout(0.5),
+            Dense(channel_n * 8 => channel_n * 8, relu),
+            # Dense(channel_n * 8 => channel_n * 8, relu),
+            # Dropout(0.5),
+            Dense(channel_n * 8 => dim_1 * dim_2, sigmoid),
+            Reshape(dim_1, dim_2, 1, :),
+            # sigmoid
+        )
+    end
 
     # decoder to GPU if available
     if args["model_cuda"] >= 0
@@ -120,7 +122,7 @@ create_vae = (dim_1::Int, dim_2::Int, channel_n::Int, latent_n::Int) -> begin
 
 end
 
-encoder_, decoder_ = create_vae(32, 32, args["model_channel_n"], args["latent_n"])
+encoder_, decoder_ = create_vae(size(x_train_)[1], size(x_train_)[2], args["model_channel_n"], args["latent_n"])
 
 # return a function that returns loss function
 lossF = (encoder, decoder, x_) -> begin
