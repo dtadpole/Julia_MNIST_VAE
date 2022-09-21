@@ -208,12 +208,12 @@ function train()
                 ])
             end)()
             # reclaim GPU memory
-            # if mod(progress_tracker.counter, 20) == 0
-            #     GC.gc(true)
-            #     if args["model_cuda"] >= 0
-            #         CUDA.reclaim()
-            #     end
-            # end
+            if mod(progress_tracker.counter, 20) == 0
+                GC.gc(true)
+                if args["model_cuda"] >= 0
+                    CUDA.reclaim()
+                end
+            end
         end
         # return epoch loss
         return loss_total / length(data_loader)
