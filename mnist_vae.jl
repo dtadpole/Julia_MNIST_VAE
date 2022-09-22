@@ -206,7 +206,7 @@ function train()
                 loss_tuple, back = pullback(params) do
                     lossF(encoder_, decoder_, x_)
                 end
-                gradients = back((1.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0))
+                gradients = back((1.0f0, nothing, nothing, nothing, nothing))
                 Flux.update!(opt, params, gradients)
                 loss_curr, loss_recon, loss_kl, mu, sigma = loss_tuple
                 # update progress tracker
